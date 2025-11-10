@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ko" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project: PocketCoach - Mifdzal Irfan</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        /* Inter 폰트 (Tailwind 기본) 사용 */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* 다크 모드 기본 설정 (필요시 'dark' 클래스 html에 추가) */
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 antialiased">
+
+    <!-- 메인 컨테이너 -->
+    <div class="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
+
+        <!-- 1. 헤더: 기본 정보 및 프로젝트 개요 -->
+        <header class="mb-16">
+            <div class="flex flex-col lg:flex-row items-start lg:items-center gap-8 lg:gap-12">
+                
+                <!-- 왼쪽: 개발자 정보 -->
+                <div class="flex-shrink-0">
+                    <img class="w-32 h-32 rounded-full object-cover shadow-lg" 
+                         src="https://placehold.co/128x128/e0e7ff/3730a3?text=MI" 
+                         alt="Irfan (Mifdzal Irfan Bin Marwan) 프로필 이미지"
+                         onerror="this.src='https://placehold.co/128x128/e0e7ff/3730a3?text=MI';">
+                    
+                    <h1 class="text-3xl font-bold text-gray-900 dark:text-white mt-4">Irfan (Mifdzal Irfan Bin Marwan)</h1>
+                    <p class="text-lg text-blue-600 dark:text-blue-400 font-medium">일상의 문제를 해결하는 시스템을 구축하는 데 열정을 가진 백엔드 개발자입니다.</p>
+                    
+                    <!-- 연락처 링크 -->
+                    <div class="flex space-x-4 mt-4 text-gray-500 dark:text-gray-400">
+                        <a href="mailto:mifdzalirfan23@gmail.com" class="hover:text-blue-600 dark:hover:text-blue-400" aria-label="Email">
+                            <i data-lucide="mail" class="w-6 h-6"></i>
+                        </a>
+                        <a href="https://github.com/mifdirfan" target="_blank" rel="noopener noreferrer" class="hover:text-blue-600 dark:hover:text-blue-400" aria-label="GitHub">
+                            <i data-lucide="github" class="w-6 h-6"></i>
+                        </a>
+                        <a href="https://linkedin.com/in/mifdirfan" target="_blank" rel="noopener noreferrer" class="hover:text-blue-600 dark:hover:text-blue-400" aria-label="LinkedIn">
+                            <i data-lucide="linkedin" class="w-6 h-6"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 오른쪽: 프로젝트 요약 -->
+                <div class="flex-1 lg:pl-12">
+                    <h2 class="text-4xl lg:text-5xl font-extrabold text-gray-900 dark:text-white">
+                        Project: <span class="text-blue-600 dark:text-blue-400">PocketCoach</span>
+                    </h2>
+                    <p class="text-2xl font-semibold text-gray-700 dark:text-gray-300 mt-2">100% 비공개 AI 피트니스 코치</p>
+                    
+                    <img class="w-full rounded-xl shadow-2xl mt-8" 
+                         src="https://placehold.co/600x400/dbeafe/1e3a8a?text=PocketCoach+Main"
+                         alt="PocketCoach 메인 화면 스크린샷"
+                         onerror="this.src='https://placehold.co/600x400/dbeafe/1e3a8a?text=PocketCoach+Main';">
+                </div>
+            </div>
+        </header>
+
+        <!-- 구분선 -->
+        <hr class="border-gray-200 dark:border-gray-700 my-16">
+
+        <!-- 2. 프로젝트 상세 -->
+        <main>
+            <!-- 섹션: 문제 정의 및 아키텍처 -->
+            <section class="mb-16">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                    <!-- 문제 정의 -->
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+                        <h3 class="text-2xl font-bold mb-4 flex items-center">
+                            <i data-lucide="alert-triangle" class="w-6 h-6 mr-3 text-red-500"></i>
+                            문제 정의 (The Problem)
+                        </h3>
+                        <p class="text-base leading-relaxed">
+                            기존의 건강 앱들은 사용자에게 효과성과 개인정보 보호 중 하나를 선택하도록 강요합니다. 사용자는 다음과 같은 주요 문제에 직면해 있습니다:<br><br>
+                            1) 특히 '찌개'와 같은 복잡한 한식의 경우, 수동으로 매크로를 추적하는 것은 매우 지루하여 사용자 이탈률이 높습니다.<br>
+                            2) 획일적인 운동 계획은 '회식'이나 개인 운동 기구 부족과 같은 실제 상황에 적응하지 못해 비효율적입니다.<br>
+                            3) 전문적인 인간 코칭은 매우 효과적이지만 대부분의 사람들에게 재정적으로 부담됩니다.<br>
+                            4) 클라우드 기반 앱은 사용자가 민감한 개인 건강 데이터를 업로드하도록 요구하여 심각한 개인정보 위험을 초래합니다.<br><br>
+                            <strong>PocketCoach의 목표는 100% 비공개로 로컬에서 실행되는 적응형 전문 AI 코치를 제공함으로써 이 네 가지 문제를 모두 해결하는 것입니다.</strong>
+                        </p>
+                    </div>
+
+                    <!-- 아키텍처 -->
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+                        <h3 class="text-2xl font-bold mb-4 flex items-center">
+                            <i data-lucide="architecture" class="w-6 h-6 mr-3 text-blue-500"></i>
+                            아키텍처/설계 (Architecture)
+                        </h3>
+                        <p class="text-base leading-relaxed mb-6">
+                            이 프로젝트는 100% 로컬, 개인정보 보호 우선의 클라이언트-서버 아키텍처를 기반으로 합니다.<br><br>
+                            • <strong>백엔드 (The "Brain"):</strong> Python Flask 서버가 사용자의 로컬 PC에서 실행됩니다. Ollama LLM과 RAG 파이프라인을 관리하며, 모든 데이터는 로컬 JSON 파일에 저장됩니다.<br>
+                            • <strong>프론트엔드 (The "Face"):</strong> Expo React Native(TypeScript) 앱이 UI 역할을 하며, 개인 WiFi 네트워크를 통해서만 로컬 Flask 서버와 통신합니다.<br>
+                            • <strong>RAG 시스템:</strong> master_food_db.csv(16만+), exercise_db.json 등 여러 데이터 소스로부터 구축됩니다.
+                        </p>
+                        <img class="w-full rounded-lg shadow-md"
+                             src="https://placehold.co/800x450/ccfbf1/0f766e?text=Architecture+Diagram"
+                             alt="PocketCoach 아키텍처 다이어그램"
+                             onerror="this.src='https://placehold.co/800x450/ccfbf1/0f766e?text=Architecture+Diagram';">
+                    </div>
+                </div>
+            </section>
+
+            <!-- 섹션: 기술 스택 -->
+            <section class="mb-16 bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg">
+                <h2 class="text-3xl font-bold text-center mb-10">기술 스택 (Technology Stack)</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- 프론트엔드 -->
+                    <div>
+                        <h4 class="text-xl font-semibold mb-4 text-blue-600 dark:text-blue-400 flex items-center">
+                            <i data-lucide="smartphone" class="w-5 h-5 mr-2"></i>Frontend
+                        </h4>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full dark:bg-blue-900 dark:text-blue-200">React Native (Expo)</span>
+                            <span class="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full dark:bg-blue-900 dark:text-blue-200">TypeScript</span>
+                            <span class="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full dark:bg-blue-900 dark:text-blue-200">React Navigation</span>
+                            <span class="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full dark:bg-blue-900 dark:text-blue-200">React Context</span>
+                            <span class="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full dark:bg-blue-900 dark:text-blue-200">@flyerhq/react-native-chat-ui</span>
+                        </div>
+                    </div>
+                    <!-- 백엔드 -->
+                    <div>
+                        <h4 class="text-xl font-semibold mb-4 text-green-600 dark:text-green-400 flex items-center">
+                            <i data-lucide="server" class="w-5 h-5 mr-2"></i>Backend
+                        </h4>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="bg-green-100 text-green-800 text-sm font-medium px-3 py-1 rounded-full dark:bg-green-900 dark:text-green-200">Python</span>
+                            <span class="bg-green-100 text-green-800 text-sm font-medium px-3 py-1 rounded-full dark:bg-green-900 dark:text-green-200">Flask</span>
+                            <span class="bg-green-100 text-green-800 text-sm font-medium px-3 py-1 rounded-full dark:bg-green-900 dark:text-green-200">Ollama</span>
+                            <span class="bg-green-100 text-green-800 text-sm font-medium px-3 py-1 rounded-full dark:bg-green-900 dark:text-green-200">Pandas</span>
+                            <span class="bg-green-100 text-green-800 text-sm font-medium px-3 py-1 rounded-full dark:bg-green-900 dark:text-green-200">Sentence-Transformers</span>
+                            <span class="bg-green-100 text-green-800 text-sm font-medium px-3 py-1 rounded-full dark:bg-green-900 dark:text-green-200">Faiss-CPU</span>
+                        </div>
+                    </div>
+                    <!-- 데브옵스 및 도구 -->
+                    <div>
+                        <h4 class="text-xl font-semibold mb-4 text-purple-600 dark:text-purple-400 flex items-center">
+                            <i data-lucide="wrench" class="w-5 h-5 mr-2"></i>DevOps & Tools
+                        </h4>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="bg-purple-100 text-purple-800 text-sm font-medium px-3 py-1 rounded-full dark:bg-purple-900 dark:text-purple-200">Git</span>
+                            <span class="bg-purple-100 text-purple-800 text-sm font-medium px-3 py-1 rounded-full dark:bg-purple-900 dark:text-purple-200">VS Code</span>
+                            <span class="bg-purple-100 text-purple-800 text-sm font-medium px-3 py-1 rounded-full dark:bg-purple-900 dark:text-purple-200">JSON</span>
+                            <span class="bg-purple-100 text-purple-800 text-sm font-medium px-3 py-1 rounded-full dark:bg-purple-900 dark:text-purple-200">CSV</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 섹션: 핵심 기능 -->
+            <section class="mb-16">
+                <h2 class="text-3xl font-bold text-center mb-10">핵심 기능 (Core Features)</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <!-- 기능 1 -->
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+                        <img class="w-full h-48 object-cover" 
+                             src="https://placehold.co/500x300/fef9c3/b45309?text=Feature+1:+Logging" 
+                             alt="RAG 기반 대화형 매크로 기록"
+                             onerror="this.src='https://placehold.co/500x300/fef9c3/b45309?text=Feature+1:+Logging';">
+                        <div class="p-6">
+                            <h4 class="text-xl font-bold mb-2">RAG 기반 대화형 매크로 기록</h4>
+                            <p class="text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+                                자연어(예: "김치찌개 300g과 밥 한 공기")로 식단을 기록합니다. 백엔드는 Faiss-CPU를 사용해 16만+ 한식 데이터베이스에서 고속 검색을 수행합니다. 기록된 식사는 즉시 UI의 매크로 요약 테이블에 반영됩니다.
+                            </p>
+                        </div>
+                    </div>
+                    <!-- 기능 2 -->
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+                        <img class="w-full h-48 object-cover"
+                             src="https://placehold.co/500x300/fce7f3/db2777?text=Feature+2:+Planning"
+                             alt="동적 및 적응형 계획 엔진"
+                             onerror="this.src='https://placehold.co/500x300/fce7f3/db2777?text=Feature+2:+Planning';">
+                        <div class="p-6">
+                            <h4 class="text-xl font-bold mb-2">동적 및 적응형 계획 엔진</h4>
+                            <p class="text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+                                온보딩 시 AI가 개인화된 계획을 생성합니다. 사용자가 채팅으로 프로필(예: "체중 78kg으로 업데이트")을 변경하면, 백엔드가 user_profile.json을 수정하고 즉시 전체 계획을 재생성하여 최신 데이터에 완벽하게 적응합니다.
+                            </p>
+                        </div>
+                    </div>
+                    <!-- 기능 3 -->
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+                        <img class="w-full h-48 object-cover"
+                             src="https://placehold.co/500x300/ecfdf5/047857?text=Feature+3:+Coaching"
+                             alt="유연한 맞춤형 코칭"
+                             onerror="this.src='https://placehold.co/500x300/ecfdf5/047857?text=Feature+3:+Coaching';">
+                        <div class="p-6">
+                            <h4 class="text-xl font-bold mb-2">유연한 맞춤형 코칭</h4>
+                            <p class="text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+                                AI가 추천하는 모든 운동에 대해 YouTube 링크를 자동으로 검색하여 클릭 가능한 형태로 제공합니다. "오늘 30분짜리 운동으로 줘" 또는 "홈트레이닝만 할래"와 같은 실생활 요청에 즉시 적응하여 새로운 계획을 생성합니다.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 섹션: 역할 및 성과 -->
+            <section class="mb-16">
+                <h2 class="text-3xl font-bold text-center mb-10">나의 역할 및 성과 (Role & Outcomes)</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- 나의 역할 및 기여 -->
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border-l-4 border-blue-500">
+                        <h3 class="text-2xl font-bold mb-4">나의 역할 및 기여</h3>
+                        <ul class="list-disc list-outside pl-5 space-y-2 text-gray-700 dark:text-gray-300">
+                            <li>전체 프로젝트의 단독 풀스택 개발자 역할 수행.</li>
+                            <li>채팅, 프로필 관리, 계획 생성을 위한 Python/Flask 백엔드 API 엔드포인트 전체 설계 및 구현.</li>
+                            <li>16만+ 음식 CSV, 운동 JSON, 건강 PDF 등 모든 RAG 데이터 소스 수집, 정제 및 처리.</li>
+                            <li>sentence-transformers와 Faiss-CPU를 사용한 핵심 RAG 파이프라인 엔지니어링.</li>
+                            <li>React Navigation, React Context, Chat-UI를 포함한 전체 Expo React Native (TypeScript) 모바일 앱 개발.</li>
+                            <li>온보딩, 식단 기록, 동적 계획 적응을 처리하기 위한 모든 프롬프트 엔지니어링 체인 작성.</li>
+                        </ul>
+                    </div>
+                    <!-- 결과 및 성과 -->
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border-l-4 border-green-500">
+                        <h3 class="text-2xl font-bold mb-4">결과 및 성과</h3>
+                        <ul class="list-disc list-outside pl-5 space-y-2 text-gray-700 dark:text-gray-300">
+                            <li>클라우드로 데이터를 전송할 필요 없는 100% 비공개, 오프라인 가능 AI 피트니스 코치 성공적 제작.</li>
+                            <li>16만 개 이상의 한식 및 가공식품 데이터베이스에 대한 매우 정확한 실시간 기록 기능 달성.</li>
+                            <li>사용자 업데이트에 따라 AI의 식단 및 운동 계획이 자동으로 조정되는 진정한 동적 시스템 구축 (실제 트레이너의 피드백 루프 시뮬레이션).</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 섹션: 회고 (배운 점 및 개선점) -->
+            <section class="mb-16">
+                <h2 class="text-3xl font-bold text-center mb-10">회고 (Retrospective)</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- 배운 점 -->
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+                        <h3 class="text-2xl font-bold mb-4 flex items-center text-purple-600 dark:text-purple-400">
+                            <i data-lucide="graduation-cap" class="w-6 h-6 mr-3"></i>배운 점 (What I Learned)
+                        </h3>
+                        <ul class="list-disc list-outside pl-5 space-y-2 text-gray-700 dark:text-gray-300">
+                            <li>풀스택, 엔드투엔드 RAG 애플리케이션을 처음부터 구축하는 과정에 대한 깊고 실질적인 이해.</li>
+                            <li>외부 API 의존 대신 로컬 LLM(Ollama)을 강력한 개인정보 보호 백엔드 엔진으로 효과적으로 활용하는 방법.</li>
+                            <li>구조화된 CSV("사실")와 비구조화된 PDF("개념") 등 여러 데이터 소스를 결합하여 더 지식이 풍부한 AI를 만드는 기술.</li>
+                            <li>React Native 모바일 앱을 로컬 Python 백엔드에 연결하는 로컬 네트워크 내 클라이언트-서버 아키텍처 관리.</li>
+                        </ul>
+                    </div>
+                    <!-- 개선점 -->
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+                        <h3 class="text-2xl font-bold mb-4 flex items-center text-yellow-600 dark:text-yellow-400">
+                            <i data-lucide="lightbulb" class="w-6 h-6 mr-3"></i>개선점 (Future Improvements)
+                        </h3>
+                        <ul class="list-disc list-outside pl-5 space-y-2 text-gray-700 dark:text-gray-300">
+                            <li><strong>"서울 스마트 이터" 기능:</strong> 편의점 및 배달 음식 데이터 자동 수집을 위한 웹 스크레이퍼 파이프라인 구축.</li>
+                            <li><strong>완전한 온디바이스 AI:</strong> Apple Core ML 또는 Google MediaPipe를 구현하여 PC 서버 필요성을 제거하고 100% 모바일 앱으로 전환.</li>
+                            <li><strong>exercise_db.json 확장:</strong> YouTube 링크 대신 react-native-webview를 사용하여 앱 내에서 직접 비디오 재생.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- 3. 푸터 -->
+        <footer class="text-center mt-16 pt-8 border-t border-gray-200 dark:border-gray-700">
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+                &copy; 2024 Mifdzal Irfan Bin Marwan. All rights reserved.
+            </p>
+        </footer>
+
+    </div>
+
+    <!-- Lucide 아이콘 활성화 스크립트 -->
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
