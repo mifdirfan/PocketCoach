@@ -1,0 +1,183 @@
+[
+  {
+    "name": "Chest Fly",
+    "target-muscle" : "Chest",
+    "youtube_link": "https://www.youtube.com/watch?v=IODxDxX7oi4"
+  },
+  {
+    "name": "Bench Press",
+    "target-muscle" : "Chest",
+    "youtube_link": "https://www.youtube.com/watch?v=5Y3VZsLb1Ys&pp=0gcJCfwAo7VqN5tD"
+  },
+  {
+    "name": "Push-up",
+    "target-muscle" : "Chest",
+    "youtube_link": "https://www.youtube.com/watch?v=IODxDxX7oi4"
+  },
+  {
+    "name": "Pullover",
+    "target-muscle" : "Chest",
+    "youtube_link": "https://www.youtube.com/watch?v=IODxDxX7oi4"
+  },
+
+  {
+    "name": "Pull-ups",
+    "target-muscle" : "Back",
+    "youtube_link": "https://www.youtube.com/watch?v=IODxDxX7oi4"
+  },
+  {
+    "name": "Deadlift",
+    "target-muscle" : "Back",
+    "youtube_link": "https://www.youtube.com/watch?v=IODxDxX7oi4"
+  },
+  {
+    "name": "Rows",
+    "target-muscle" : "Back",
+    "youtube_link": "https://www.youtube.com/watch?v=IODxDxX7oi4"
+  },
+  {
+    "name": "Lat pulldown",
+    "target-muscle" : "Back",
+    "youtube_link": "https://www.youtube.com/watch?v=IODxDxX7oi4"
+  },
+  {
+    "name": "Seated row",
+    "target-muscle" : "Back",
+    "youtube_link": "https://www.youtube.com/watch?v=IODxDxX7oi4"
+  },
+
+  {
+    "name": "Overhead press",
+    "target-muscle" : "Shoulders",
+    "youtube_link": "https://www.youtube.com/watch?v=IODxDxX7oi4"
+  },
+  {
+    "name": "Lateral raise",
+    "target-muscle" : "Shoulders",
+    "youtube_link": "https://www.youtube.com/watch?v=IODxDxX7oi4"
+  },
+  {
+    "name": "Front raise",
+    "target-muscle" : "Shoulders",
+    "youtube_link": "https://www.youtube.com/watch?v=IODxDxX7oi4"
+  },
+  {
+    "name": "Rear delt fly",
+    "target-muscle" : "Shoulders",
+    "youtube_link": "https://www.youtube.com/watch?v=IODxDxX7oi4"
+  },
+
+  {
+    "name": "Bicep curls",
+    "target-muscle" : "Biceps",
+    "youtube_link": "https://www.youtube.com/watch?v=IODxDxX7oi4"
+  },
+  {
+    "name": "Hammer curls",
+    "target-muscle" : "Biceps",
+    "youtube_link": "https://www.youtube.com/watch?v=IODxDxX7oi4"
+  },
+
+  {
+    "name": "Dips",
+    "target-muscle" : "Triceps",
+    "youtube_link": "https://www.youtube.com/watch?v=IODxDxX7oi4"
+  },
+  {
+    "name": "Triceps Pushdown",
+    "target-muscle" : "Triceps",
+    "youtube_link": "https://www.youtube.com/watch?v=IODxDxX7oi4"
+  },
+  {
+    "name": "Triceps Extension",
+    "target-muscle" : "Triceps",
+    "youtube_link": "https://www.youtube.com/watch?v=IODxDxX7oi4"
+  },
+
+  {
+    "name": "Squat",
+    "target-muscle" : "Quadriceps",
+    "youtube_link": "https://www.youtube.com/watch?v=xqvCmoLULNY"
+  },
+  {
+    "name": "Lunges",
+    "target-muscle" : "Quadriceps",
+    "youtube_link": "https://www.youtube.com/watch?v=IODxDxX7oi4"
+  },
+  {
+    "name": "Leg press",
+    "target-muscle" : "Quadriceps",
+    "youtube_link": "https://www.youtube.com/watch?v=IODxDxX7oi4"
+  },
+  {
+    "name": "Leg Extension",
+    "target-muscle" : "Quadriceps",
+    "youtube_link": "https://www.youtube.com/watch?v=IODxDxX7oi4"
+  },
+
+  {
+    "name": "Leg curl",
+    "target-muscle" : "Hamstrings",
+    "youtube_link": "https://www.youtube.com/watch?v=IODxDxX7oi4"
+  },
+  {
+    "name": "Romanian Deadlift",
+    "target-muscle" : "Hamstrings",
+    "youtube_link": "https://www.youtube.com/watch?v=IODxDxX7oi4"
+  },
+
+  {
+    "name": "Hip Thrust",
+    "target-muscle" : "Glutes",
+    "youtube_link": "https://www.youtube.com/watch?v=IODxDxX7oi4"
+  },
+  {
+    "name": "Glute bridges",
+    "target-muscle" : "Glutes",
+    "youtube_link": "https://www.youtube.com/watch?v=IODxDxX7oi4"
+  },
+
+  {
+    "name": "Calf Raise",
+    "target-muscle" : "Calves",
+    "youtube_link": "https://www.youtube.com/watch?v=IODxDxX7oi4"
+  },
+
+  {
+    "name": "Plank",
+    "target-muscle" : "Abs",
+    "youtube_link": "https://www.youtube.com/watch?v=IODxDxX7oi4"
+  },
+  {
+    "name": "Sit-ups",
+    "target-muscle" : "Abs",
+    "youtube_link": "https://www.youtube.com/watch?v=IODxDxX7oi4"
+  },
+
+  {
+    "name": "Side Plank",
+    "target-muscle" : "Obliques",
+    "youtube_link": "https://www.youtube.com/watch?v=IODxDxX7oi4"
+  },
+  {
+    "name": "Russian Twist",
+    "target-muscle" : "Obliques",
+    "youtube_link": "https://www.youtube.com/watch?v=IODxDxX7oi4"
+  },
+
+  {
+    "name": "Burpees",
+    "target-muscle" : "Full-body",
+    "youtube_link": "https://www.youtube.com/watch?v=IODxDxX7oi4"
+  },
+  {
+    "name": "Resistance bands",
+    "target-muscle" : "Full-Body",
+    "youtube_link": "https://www.youtube.com/watch?v=IODxDxX7oi4"
+  },
+  {
+    "name": "Kettlebell swings",
+    "target-muscle" : "Full-Body",
+    "youtube_link": "https://www.youtube.com/watch?v=IODxDxX7oi4"
+  }
+]

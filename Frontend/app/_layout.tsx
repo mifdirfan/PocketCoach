@@ -1,24 +1,53 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import React, { useContext } from 'react';
 import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
+// --- FIX: Use relative path ---
+import { AppProvider, AppContext, AppContextTypeWithLoading } from '../context/AppContext';
+import { useFonts } from 'expo-font';
+import { Ionicons } from '@expo/vector-icons';
+import { ActivityIndicator, View } from 'react-native';
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
+// This component now just waits for fonts and profile to be loaded
+function RootLayoutNav() {
+    const context = useContext(AppContext) as AppContextTypeWithLoading;
 
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
+    // Show a loader while we're restoring the profile
+    if (context?.isRestoring) {
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <ActivityIndicator size="large" />
+            </View>
+        );
+    }
 
+    // The old useEffect with router.replace() is REMOVED.
+    // The 'index' route (our welcome screen) will now load by default.
+
+    return (
+        <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="onboarding" />
+            <Stack.Screen name="(tabs)" />
+        </Stack>
+    );
+}
+
+// Your RootLayout is the same, just wrapping RootLayoutNav
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
+    const [fontsLoaded] = useFonts({
+        ...Ionicons.font,
+    });
 
-  return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
-  );
+    if (!fontsLoaded) {
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <ActivityIndicator size="large" />
+            </View>
+        );
+    }
+
+    return (
+        <AppProvider>
+            <RootLayoutNav />
+        </AppProvider>
+    );
 }

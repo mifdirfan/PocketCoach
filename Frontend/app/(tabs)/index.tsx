@@ -1,98 +1,350 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
+import {
+    StyleSheet,
+    Platform,
+    KeyboardAvoidingView,
+    View,
+    Text,
+    TouchableOpacity,
+    Alert,
+    ActivityIndicator
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import {
+    GiftedChat,
+    IMessage,
+    User,
+    InputToolbar,
+    Composer,
+    Send,
+    Bubble,
+    InputToolbarProps
+} from 'react-native-gifted-chat';
+import 'react-native-get-random-values';
+import { v4 as uuidv4 } from 'uuid';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { AppContext } from '../../context/AppContext';
+import { API_BASE_URL } from '../../constants/api';
+import MacroSummary from '../../components/MacroSummary';
+import { AppContextType, Summary, Profile } from '../../constants/types';
+import { normalize, formatDate, formatQueryDate } from '../../constants/helpers'; // Import all helpers
+import { theme } from '../../constants/theme';
 
-export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
+// --- User/Bot Definitions ---
+const BOT_USER: User = {
+    _id: 2,
+    name: 'PocketCoach',
+    avatar: 'https://placehold.co/140x140/3a7bd5/FFFFFF?text=AI',
+};
+const USER_LOCAL: User = {
+    _id: 1,
+};
+
+// --- Main Chat Screen ---
+export default function ChatScreen() {
+    const context = useContext(AppContext);
+
+    const tabBarHeight = useBottomTabBarHeight();
+    console.log(`[LOG] Tab Bar Height: ${tabBarHeight}`);
+    if (Platform.OS === 'ios') {
+        console.log(`[LOG] Using bottomOffset: ${tabBarHeight}`);
+    } else {
+        console.log(`[LOG] Using bottomOffset: 0 (for Android)`);
+    }
+
+    const [messages, setMessages] = useState<IMessage[]>([]);
+    const [isTyping, setIsTyping] = useState(false);
+    const [summary, setSummary] = useState<Summary | null>(null);
+    const [displayDate, setDisplayDate] = useState(new Date());
+
+    // Show loader if context is not ready
+    if (!context) {
+        return (
+            <LinearGradient colors={[theme.Colors.gradientStart, theme.Colors.gradientEnd]} style={styles.loaderContainer}>
+                <ActivityIndicator size="large" color={theme.Colors.white} />
+            </LinearGradient>
+        );
+    }
+    const { profile, setProfile } = context;
+
+    // --- Data Fetching ---
+    const fetchSummary = useCallback((date: Date) => {
+        const dateString = formatQueryDate(date);
+        fetch(`${API_BASE_URL}/get_summary?date=${dateString}`)
+            .then(res => res.json())
+            .then((data: Summary) => setSummary(data))
+            .catch(err => console.error("Summary fetch error:", err));
+    }, []);
+
+    useEffect(() => {
+        fetchSummary(displayDate);
+    }, [displayDate, fetchSummary, profile]);
+
+    useEffect(() => {
+        if (profile) {
+            setMessages([
+                {
+                    _id: uuidv4(),
+                    text: `안녕하세요, ${profile?.name || '사용자'}님! '${profile?.goal || '목표'}' 달성을 도울 준비가 되었습니다.`,
+                    createdAt: Date.now(),
+                    user: BOT_USER,
+                },
+            ]);
+        }
+    }, [profile]); // Only run when profile is loaded
+
+    // --- Date Handlers ---
+    const handlePrevDay = () => {
+        setDisplayDate(prevDate => {
+            const newDate = new Date(prevDate);
+            newDate.setDate(newDate.getDate() - 1);
+            return newDate;
+        });
+    };
+
+    const handleNextDay = () => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const currentDisplayDate = new Date(displayDate);
+        currentDisplayDate.setHours(0,0,0,0);
+        if (currentDisplayDate < today) {
+            setDisplayDate(prevDate => {
+                const newDate = new Date(prevDate);
+                newDate.setDate(newDate.getDate() + 1);
+                return newDate;
+            });
+        }
+    };
+    const isToday = displayDate.toDateString() === new Date().toDateString();
+
+    // --- Send Handler ---
+    const onSend = useCallback((newMessages: IMessage[] = []) => {
+        const userMessage = newMessages[0];
+
+        if (!isToday && (userMessage.text.includes('g') || userMessage.text.includes('그램') || userMessage.text.includes('update'))) {
+            Alert.alert("알림", "식사 기록 및 프로필 업데이트는 오늘 날짜에만 가능합니다.");
+            return;
+        }
+
+        setMessages(previousMessages => GiftedChat.append(previousMessages, newMessages));
+        setIsTyping(true);
+
+        fetch(`${API_BASE_URL}/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: userMessage.text }),
+        })
+            .then(res => res.json())
+            .then(data => {
+                setIsTyping(false);
+                const botResponse: IMessage = {
+                    _id: uuidv4(),
+                    text: data.response,
+                    createdAt: Date.now(),
+                    user: BOT_USER,
+                };
+                setMessages(previousMessages => GiftedChat.append(previousMessages, [botResponse]));
+
+                if (data.profile) {
+                    setProfile(data.profile as Profile);
+                }
+                if (data.daily_summary) {
+                    fetchSummary(new Date());
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                setIsTyping(false);
+                const errorResponse: IMessage = {
+                    _id: uuidv4(),
+                    text: "서버 연결에 실패했습니다. 백엔드 서버가 실행 중인지 확인해주세요.",
+                    createdAt: Date.now(),
+                    user: BOT_USER,
+                };
+                setMessages(previousMessages => GiftedChat.append(previousMessages, [errorResponse]));
+            });
+    }, [isToday, fetchSummary, setProfile]);
+
+    // --- Custom Render Functions for Gifted Chat ---
+    const renderCustomInputToolbar = (props: InputToolbarProps<IMessage>) => (
+        <InputToolbar
+            {...props}
+            containerStyle={styles.inputToolbar}
+            primaryStyle={{ alignItems: 'center' }}
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    );
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
-  );
+    const renderCustomComposer = (props: any) => (
+        <Composer
+            {...props}
+            textInputStyle={styles.textInput}
+            placeholderTextColor={theme.Colors.textPlaceholder}
+        />
+    );
+
+    const renderCustomSend = (props: any) => (
+        <Send
+            {...props}
+            containerStyle={styles.sendContainer}
+            disabled={!props.text}
+        >
+            <Ionicons name="send" size={normalize(24)} color={theme.Colors.primary} />
+        </Send>
+    );
+
+    const renderCustomBubble = (props: any) => (
+        <Bubble
+            {...props}
+            wrapperStyle={{
+                left: styles.botBubble,
+                right: styles.userBubble,
+            }}
+            textStyle={{
+                left: styles.botBubbleText,
+                right: styles.userBubbleText,
+            }}
+        />
+    );
+
+    return (
+        <LinearGradient colors={[theme.Colors.gradientStart, theme.Colors.gradientEnd]} style={styles.gradientBackground}>
+            <SafeAreaView style={styles.container} edges={['top']}>
+                <View style={styles.chatHeader}>
+                    <Text style={styles.chatHeaderTitle}>Chat</Text>
+                    <TouchableOpacity>
+                        <Ionicons name="ellipsis-horizontal" size={theme.Fonts.h1} color={theme.Colors.textWhite} />
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.datePickerContainer}>
+                    <TouchableOpacity onPress={handlePrevDay}>
+                        <Ionicons name="chevron-back" size={normalize(24)} color={theme.Colors.textWhite} />
+                    </TouchableOpacity>
+                    <Text style={styles.datePickerText}>{isToday ? 'Today' : formatDate(displayDate)}</Text>
+                    <TouchableOpacity onPress={handleNextDay} disabled={isToday}>
+                        <Ionicons name="chevron-forward" size={normalize(24)} color={isToday ? '#ffffff50' : theme.Colors.textWhite} />
+                    </TouchableOpacity>
+                </View>
+
+                <MacroSummary summary={summary} />
+
+                <View style={styles.chatArea}>
+                    <GiftedChat
+                        messages={messages}
+                        onSend={newMessages => onSend(newMessages)}
+                        user={USER_LOCAL}
+                        isTyping={isTyping}
+                        placeholder="Log a meal or ask a question..."
+                        renderUsernameOnMessage={true}
+                        renderInputToolbar={renderCustomInputToolbar}
+                        renderComposer={renderCustomComposer}
+                        renderSend={renderCustomSend}
+                        renderBubble={renderCustomBubble}
+                        minInputToolbarHeight={normalize(50)}
+
+                        //bottomOffset={Platform.OS === 'ios' ? tabBarHeight : 0}
+                    />
+                </View>
+
+                {/* KeyboardAvoidingView is handled by GiftedChat's props, but we keep one for Android just in case */}
+                {/*{Platform.OS === 'android' && <KeyboardAvoidingView behavior="padding" />}*/}
+            </SafeAreaView>
+        </LinearGradient>
+    );
 }
 
+// --- Styles ---
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
+    gradientBackground: {
+        flex: 1,
+    },
+    container: {
+        flex: 1,
+    },
+    loaderContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    chatHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: theme.Spacing.padding,
+        paddingTop: Platform.OS === 'android' ? theme.Spacing.margin : 0,
+        paddingBottom: normalize(10),
+    },
+    chatHeaderTitle: {
+        fontSize: theme.Fonts.h1,
+        fontWeight: 'bold',
+        color: theme.Colors.textWhite,
+    },
+    datePickerContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: theme.Spacing.padding,
+        paddingVertical: normalize(10),
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    },
+    datePickerText: {
+        fontSize: theme.Fonts.body,
+        fontWeight: '500',
+        color: theme.Colors.textWhite,
+    },
+    chatArea: {
+        flex: 1,
+        backgroundColor: theme.Colors.backgroundChat,
+        borderTopLeftRadius: theme.Spacing.radius,
+        borderTopRightRadius: theme.Spacing.radius,
+        marginTop: normalize(10),
+        overflow: 'hidden',
+    },
+    // Gifted Chat Styles
+    userBubble: {
+        backgroundColor: theme.Colors.primary,
+        borderBottomRightRadius: normalize(5),
+        borderBottomLeftRadius: theme.Spacing.radius,
+        borderTopLeftRadius: theme.Spacing.radius,
+        borderTopRightRadius: theme.Spacing.radius,
+    },
+    botBubble: {
+        backgroundColor: theme.Colors.white,
+        borderBottomLeftRadius: normalize(5),
+        borderBottomRightRadius: theme.Spacing.radius,
+        borderTopLeftRadius: theme.Spacing.radius,
+        borderTopRightRadius: theme.Spacing.radius,
+    },
+    userBubbleText: {
+        color: theme.Colors.white,
+        fontSize: theme.Fonts.body,
+    },
+    botBubbleText: {
+        color: theme.Colors.textBlack,
+        fontSize: theme.Fonts.body,
+    },
+    inputToolbar: {
+        backgroundColor: theme.Colors.white,
+        borderTopWidth: 1,
+        borderTopColor: '#eee',
+        paddingHorizontal: normalize(10),
+        paddingVertical: normalize(5),
+    },
+    textInput: {
+        color: theme.Colors.textBlack,
+        fontSize: theme.Fonts.body,
+        lineHeight: normalize(20),
+        paddingTop: Platform.OS === 'ios' ? normalize(8) : 0, // iOS padding fix
+        paddingBottom: Platform.OS === 'ios' ? normalize(8) : 0, // iOS padding fix
+    },
+    sendContainer: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: normalize(10),
+        marginRight: normalize(5),
+        marginBottom: Platform.OS === 'ios' ? normalize(5) : normalize(8), // OS-specific alignment
+    }
 });

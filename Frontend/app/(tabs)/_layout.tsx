@@ -1,35 +1,70 @@
-import { Tabs } from 'expo-router';
 import React from 'react';
-
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Tabs } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { theme } from '../../constants/theme';
+import { normalize } from '../../constants/helpers';
+import {Platform} from "react-native";
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
-  return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
-        }}
-      />
-    </Tabs>
-  );
+    return (
+        <Tabs
+            screenOptions={{
+                headerShown: false,
+                tabBarActiveTintColor: theme.Colors.primary,
+                tabBarInactiveTintColor: theme.Colors.textGray,
+                tabBarStyle: {
+                    backgroundColor: theme.Colors.white,
+                    borderTopWidth: 0,
+                    elevation: 10,
+                    shadowOpacity: 0.1,
+                    height: Platform.OS === 'android' ? normalize(60) : normalize(80),
+                    paddingBottom: Platform.OS === 'android' ? normalize(5) : normalize(30),
+                },
+                tabBarLabelStyle: {
+                    fontSize: theme.Fonts.caption,
+                    fontWeight: '600',
+                },
+            }}
+        >
+            <Tabs.Screen
+                name="index" // This links to app/(tabs)/index.tsx
+                options={{
+                    title: 'Chat',
+                    tabBarIcon: ({ color, focused }) => (
+                        <Ionicons
+                            name={focused ? 'chatbubble-sharp' : 'chatbubble-outline'}
+                            size={normalize(26)}
+                            color={color}
+                        />
+                    ),
+                }}
+            />
+            <Tabs.Screen
+                name="plan" // This links to app/(tabs)/plan.tsx
+                options={{
+                    title: 'Plan',
+                    tabBarIcon: ({ color, focused }) => (
+                        <Ionicons
+                            name={focused ? 'document-text' : 'document-text-outline'}
+                            size={normalize(26)}
+                            color={color}
+                        />
+                    ),
+                }}
+            />
+            <Tabs.Screen
+                name="profile" // This links to app/(tabs)/profile.tsx
+                options={{
+                    title: 'Profile',
+                    tabBarIcon: ({ color, focused }) => (
+                        <Ionicons
+                            name={focused ? 'person-sharp' : 'person-outline'}
+                            size={normalize(26)}
+                            color={color}
+                        />
+                    ),
+                }}
+            />
+        </Tabs>
+    );
 }

@@ -1,53 +1,64 @@
-/**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
- */
+import { normalize } from './helpers';
 
-import { Platform } from 'react-native';
+// 1. COLORS
+// Based on your design drafts
+const Colors = {
+    // Brand Colors
+    primary: '#3a7bd5',
+    gradientStart: '#A8C0FF',
+    gradientEnd: '#392C78',
 
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+    // Text Colors
+    textWhite: '#FFFFFF',
+    textBlack: '#333333',
+    textGray: '#666666',
+    textPlaceholder: '#999999',
 
-export const Colors = {
-  light: {
-    text: '#11181C',
-    background: '#fff',
-    tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
-  },
-  dark: {
-    text: '#ECEDEE',
-    background: '#151718',
-    tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
-  },
+    // Background Colors
+    backgroundChat: '#f4f7f9',
+    cardBackground: '#FFFFFF',
+
+    // Macro Colors
+    protein: '#FF6347', // Red
+    carbs: '#FFD700',   // Yellow
+    fat: '#4682B4',   // Blue
+
+    // Other
+    transparent: 'transparent',
+    white: '#FFFFFF',
+    black: '#000000',
+    error: 'red',
+    success: 'green',
 };
 
-export const Fonts = Platform.select({
-  ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: 'ui-monospace',
-  },
-  default: {
-    sans: 'normal',
-    serif: 'serif',
-    rounded: 'normal',
-    mono: 'monospace',
-  },
-  web: {
-    sans: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-    serif: "Georgia, 'Times New Roman', serif",
-    rounded: "'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
-    mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
-  },
-});
+// 2. FONT SIZES
+const Fonts = {
+    // Headers
+    h1: normalize(28),
+    h2: normalize(22),
+    h3: normalize(18),
+
+    // Special
+    circleMain: normalize(30),
+
+    // Body
+    body: normalize(16),
+    label: normalize(14),
+    caption: normalize(12),
+};
+
+// 3. SPACING
+const Spacing = {
+    padding: normalize(20),
+    margin: normalize(15),
+    radius: normalize(20),
+};
+
+// 4. EXPORT THEME
+export const theme = {
+    Colors,
+    Fonts,
+    Spacing,
+};
+
+export default theme;
