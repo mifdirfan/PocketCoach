@@ -116,8 +116,8 @@ const styles = StyleSheet.create({
         backgroundColor: theme.Colors.cardBackground,
         borderRadius: theme.Spacing.radius,
         marginHorizontal: theme.Spacing.margin,
-        paddingVertical: normalize(15), // Adjusted padding
-        paddingHorizontal: normalize(10), // Adjusted padding
+        paddingVertical: normalize(5), // REDUCED from 15
+        paddingHorizontal: normalize(5),
         shadowColor: theme.Colors.black,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.1,
@@ -126,11 +126,11 @@ const styles = StyleSheet.create({
         marginBottom: normalize(10),
     },
     macroCardTitle: {
-        fontSize: theme.Fonts.h3,
+        fontSize: theme.Fonts.h3, // REDUCED from h3
         fontWeight: '600',
         color: theme.Colors.textBlack,
-        marginBottom: normalize(12),
-        paddingHorizontal: normalize(5), // Align title with column padding
+        marginBottom: normalize(5), // REDUCED from 12
+        paddingHorizontal: normalize(5),
     },
     contentContainer: {
         flexDirection: 'row',
@@ -144,59 +144,59 @@ const styles = StyleSheet.create({
         fontSize: theme.Fonts.body,
         color: theme.Colors.textGray,
         fontWeight: '500',
-        marginBottom: normalize(5),
+        marginBottom: normalize(3), // REDUCED from 5
     },
     mainValueContainer: {
         flexDirection: 'row',
         alignItems: 'flex-end',
-        marginBottom: normalize(5),
+        marginBottom: normalize(3), // REDUCED from 5
     },
     mainValue: {
-        fontSize: theme.Fonts.h1, // Large font for calories
+        fontSize: theme.Fonts.h2, // REDUCED from h1
         fontWeight: 'bold',
         color: theme.Colors.textBlack,
-        lineHeight: normalize(32), // Adjust line height to match font
+        lineHeight: normalize(28), // REDUCED from 32
     },
     mainUnit: {
-        fontSize: theme.Fonts.label,
+        fontSize: theme.Fonts.caption, // REDUCED from label
         color: theme.Colors.textGray,
         fontWeight: '500',
         marginLeft: normalize(4),
-        marginBottom: normalize(3), // Align baseline with main value
+        marginBottom: normalize(3),
     },
     subText: {
         fontSize: theme.Fonts.caption,
         color: theme.Colors.textGray,
-        marginTop: normalize(5),
+        marginTop: normalize(3), // REDUCED from 5
     },
     progressBarContainer: {
-        height: normalize(8), // Skinny progress bar
-        backgroundColor: theme.Colors.backgroundChat, // Inactive color
-        borderRadius: normalize(4),
-        overflow: 'hidden', // Ensures progress bar stays within border
+        height: normalize(6), // REDUCED from 8
+        backgroundColor: theme.Colors.backgroundChat,
+        borderRadius: normalize(3), // REDUCED from 4
+        overflow: 'hidden',
     },
     progressBar: {
         height: '100%',
-        borderRadius: normalize(4),
+        borderRadius: normalize(3), // REDUCED from 4
     },
     macroRowContainer: {
-        marginBottom: normalize(10), // Space between protein, carbs, fat
+        marginBottom: normalize(8), // REDUCED from 10
     },
     macroRowLabel: {
         fontSize: theme.Fonts.label,
         color: theme.Colors.textBlack,
         fontWeight: '600',
-        marginBottom: normalize(4),
+        marginBottom: normalize(3), // REDUCED from 4
     },
     macroRowValue: {
         fontSize: theme.Fonts.caption,
         color: theme.Colors.textGray,
-        marginTop: normalize(4),
+        marginTop: normalize(3), // REDUCED from 4
     },
     planText: {
         fontSize: theme.Fonts.label,
         color: theme.Colors.textGray,
-        marginTop: normalize(15),
+        marginTop: normalize(8), // REDUCED from 15
         textAlign: 'center',
         paddingHorizontal: normalize(5),
     },

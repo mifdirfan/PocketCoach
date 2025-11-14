@@ -63,3 +63,24 @@ export interface AppContextType {
     profile: Profile | null;
     setProfile: (profile: Profile | null) => void;
 }
+
+export interface User {
+    _id: string | number;
+    name?: string;
+    avatar?: string;
+}
+
+export interface IMessage {
+    _id: string | number;
+    text: string;
+    createdAt: Date | number;
+    user: User;
+    // You can add these other optional fields if you need them
+    image?: string;
+    video?: string;
+    audio?: string;
+    system?: boolean;
+    sent?: boolean;
+    received?: boolean;
+    pending?: boolean;
+}

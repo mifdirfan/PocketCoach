@@ -2,25 +2,18 @@ import React, { useState, useEffect, useCallback, useContext } from 'react';
 import {
     StyleSheet,
     Platform,
-    KeyboardAvoidingView,
     View,
     Text,
     TouchableOpacity,
     Alert,
-    ActivityIndicator
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    FlatList,
+    TextInput
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
-import {
-    GiftedChat,
-    IMessage,
-    User,
-    InputToolbar,
-    Composer,
-    Send,
-    Bubble,
-    InputToolbarProps
-} from 'react-native-gifted-chat';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'; // No longer needed
+
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -29,36 +22,56 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppContext } from '../../context/AppContext';
 import { API_BASE_URL } from '../../constants/api';
 import MacroSummary from '../../components/MacroSummary';
-import { AppContextType, Summary, Profile } from '../../constants/types';
-import { normalize, formatDate, formatQueryDate } from '../../constants/helpers'; // Import all helpers
+import { AppContextType, Summary, Profile, IMessage, User } from '../../constants/types';
+import { normalize, formatDate, formatQueryDate } from '../../constants/helpers';
 import { theme } from '../../constants/theme';
 
-// --- User/Bot Definitions ---
+// --- User/Bot Definitions (Unchanged) ---
 const BOT_USER: User = {
     _id: 2,
     name: 'PocketCoach',
-    avatar: 'https://placehold.co/140x140/3a7bd5/FFFFFF?text=AI',
+    avatar: '../../assets/favicon.png',
 };
 const USER_LOCAL: User = {
     _id: 1,
+};
+
+const MessageBubble = ({ item }: { item: IMessage }) => {
+    const isBot = item.user._id === BOT_USER._id;
+
+    return (
+        <View style={[
+            styles.bubbleContainer,
+            isBot ? styles.botBubbleContainer : styles.userBubbleContainer
+        ]}>
+            <View style={[
+                isBot ? styles.botBubble : styles.userBubble
+            ]}>
+                <Text style={isBot ? styles.botBubbleText : styles.userBubbleText}>
+                    {item.text}
+                </Text>
+            </View>
+        </View>
+    );
 };
 
 // --- Main Chat Screen ---
 export default function ChatScreen() {
     const context = useContext(AppContext);
 
-    const tabBarHeight = useBottomTabBarHeight();
-    console.log(`[LOG] Tab Bar Height: ${tabBarHeight}`);
-    if (Platform.OS === 'ios') {
-        console.log(`[LOG] Using bottomOffset: ${tabBarHeight}`);
-    } else {
-        console.log(`[LOG] Using bottomOffset: 0 (for Android)`);
-    }
+    const tabBarHeight = useBottomTabBarHeight(); // This is the FULL height (e.g., 84)
+    const insets = useSafeAreaInsets();      // This gets the bottom notch height (e.g., 34)
+
+    // The KAV offset is the height of the tab bar *minus* the bottom safe area.
+    // This stops the "double padding" gap.
+    // e.g., 84 (tabBarHeight) - 34 (insets.bottom) = 50 (the visible tab bar)
+    const kavOffset = Platform.OS === 'ios' ? (tabBarHeight - insets.bottom) : 0;
 
     const [messages, setMessages] = useState<IMessage[]>([]);
     const [isTyping, setIsTyping] = useState(false);
     const [summary, setSummary] = useState<Summary | null>(null);
-    const [displayDate, setDisplayDate] = useState(new Date());
+    const [currentMessageText, setCurrentMessageText] = useState("");
+    // const [displayDate, setDisplayDate] = useState(new Date()); // <-- REMOVED
 
     // Show loader if context is not ready
     if (!context) {
@@ -71,6 +84,7 @@ export default function ChatScreen() {
     const { profile, setProfile } = context;
 
     // --- Data Fetching ---
+    // This function now *only* fetches for the date it's given
     const fetchSummary = useCallback((date: Date) => {
         const dateString = formatQueryDate(date);
         fetch(`${API_BASE_URL}/get_summary?date=${dateString}`)
@@ -79,10 +93,12 @@ export default function ChatScreen() {
             .catch(err => console.error("Summary fetch error:", err));
     }, []);
 
+    // Fetch summary for TODAY on load
     useEffect(() => {
-        fetchSummary(displayDate);
-    }, [displayDate, fetchSummary, profile]);
+        fetchSummary(new Date());
+    }, [fetchSummary, profile]); // <-- REMOVED displayDate
 
+    // --- Welcome Message (Unchanged) ---
     useEffect(() => {
         if (profile) {
             setMessages([
@@ -94,43 +110,18 @@ export default function ChatScreen() {
                 },
             ]);
         }
-    }, [profile]); // Only run when profile is loaded
+    }, [profile]);
 
-    // --- Date Handlers ---
-    const handlePrevDay = () => {
-        setDisplayDate(prevDate => {
-            const newDate = new Date(prevDate);
-            newDate.setDate(newDate.getDate() - 1);
-            return newDate;
-        });
-    };
-
-    const handleNextDay = () => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const currentDisplayDate = new Date(displayDate);
-        currentDisplayDate.setHours(0,0,0,0);
-        if (currentDisplayDate < today) {
-            setDisplayDate(prevDate => {
-                const newDate = new Date(prevDate);
-                newDate.setDate(newDate.getDate() + 1);
-                return newDate;
-            });
-        }
-    };
-    const isToday = displayDate.toDateString() === new Date().toDateString();
-
-    // --- Send Handler ---
-    const onSend = useCallback((newMessages: IMessage[] = []) => {
+    // --- Send Handler (SIMPLIFIED) ---
+    const onSendBackend = useCallback((newMessages: IMessage[] = []) => {
         const userMessage = newMessages[0];
 
-        if (!isToday && (userMessage.text.includes('g') || userMessage.text.includes('그램') || userMessage.text.includes('update'))) {
-            Alert.alert("알림", "식사 기록 및 프로필 업데이트는 오늘 날짜에만 가능합니다.");
-            return;
-        }
+        // --- Date check is REMOVED ---
+        // We assume all logs/updates are for today
 
-        setMessages(previousMessages => GiftedChat.append(previousMessages, newMessages));
+        setMessages(previousMessages => [userMessage, ...previousMessages]);
         setIsTyping(true);
+        setCurrentMessageText("");
 
         fetch(`${API_BASE_URL}/chat`, {
             method: 'POST',
@@ -143,10 +134,10 @@ export default function ChatScreen() {
                 const botResponse: IMessage = {
                     _id: uuidv4(),
                     text: data.response,
-                    createdAt: Date.now(),
+                    createdAt: new Date(),
                     user: BOT_USER,
                 };
-                setMessages(previousMessages => GiftedChat.append(previousMessages, [botResponse]));
+                setMessages(previousMessages => [botResponse, ...previousMessages]);
 
                 if (data.profile) {
                     setProfile(data.profile as Profile);
@@ -156,112 +147,105 @@ export default function ChatScreen() {
                 }
             })
             .catch(err => {
+                // ... (error handling unchanged) ...
                 console.error(err);
                 setIsTyping(false);
                 const errorResponse: IMessage = {
                     _id: uuidv4(),
                     text: "서버 연결에 실패했습니다. 백엔드 서버가 실행 중인지 확인해주세요.",
-                    createdAt: Date.now(),
+                    createdAt: new Date(),
                     user: BOT_USER,
                 };
-                setMessages(previousMessages => GiftedChat.append(previousMessages, [errorResponse]));
+                setMessages(previousMessages => [errorResponse, ...previousMessages]);
             });
-    }, [isToday, fetchSummary, setProfile]);
+    }, [fetchSummary, setProfile]);
 
-    // --- Custom Render Functions for Gifted Chat ---
-    const renderCustomInputToolbar = (props: InputToolbarProps<IMessage>) => (
-        <InputToolbar
-            {...props}
-            containerStyle={styles.inputToolbar}
-            primaryStyle={{ alignItems: 'center' }}
-        />
-    );
+    const handleSend = () => {
+        const text = currentMessageText.trim();
+        if (!text) {
+            return;
+        }
 
-    const renderCustomComposer = (props: any) => (
-        <Composer
-            {...props}
-            textInputStyle={styles.textInput}
-            placeholderTextColor={theme.Colors.textPlaceholder}
-        />
-    );
+        // 1. Create the IMessage object
+        const userMessage: IMessage = {
+            _id: uuidv4(),
+            text: text,
+            createdAt: new Date(),
+            user: USER_LOCAL,
+        };
 
-    const renderCustomSend = (props: any) => (
-        <Send
-            {...props}
-            containerStyle={styles.sendContainer}
-            disabled={!props.text}
-        >
-            <Ionicons name="send" size={normalize(24)} color={theme.Colors.primary} />
-        </Send>
-    );
+        // 2. Call our backend logic
+        onSendBackend([userMessage]);
+    };
 
-    const renderCustomBubble = (props: any) => (
-        <Bubble
-            {...props}
-            wrapperStyle={{
-                left: styles.botBubble,
-                right: styles.userBubble,
-            }}
-            textStyle={{
-                left: styles.botBubbleText,
-                right: styles.userBubbleText,
-            }}
-        />
-    );
 
     return (
         <LinearGradient colors={[theme.Colors.gradientStart, theme.Colors.gradientEnd]} style={styles.gradientBackground}>
-            <SafeAreaView style={styles.container} edges={['top']}>
+
+            {/* 1. SafeArea for the TOP notch ONLY */}
+            <SafeAreaView style={styles.topSafe} edges={['top']}>
                 <View style={styles.chatHeader}>
                     <Text style={styles.chatHeaderTitle}>Chat</Text>
                     <TouchableOpacity>
                         <Ionicons name="ellipsis-horizontal" size={theme.Fonts.h1} color={theme.Colors.textWhite} />
                     </TouchableOpacity>
                 </View>
-
-                <View style={styles.datePickerContainer}>
-                    <TouchableOpacity onPress={handlePrevDay}>
-                        <Ionicons name="chevron-back" size={normalize(24)} color={theme.Colors.textWhite} />
-                    </TouchableOpacity>
-                    <Text style={styles.datePickerText}>{isToday ? 'Today' : formatDate(displayDate)}</Text>
-                    <TouchableOpacity onPress={handleNextDay} disabled={isToday}>
-                        <Ionicons name="chevron-forward" size={normalize(24)} color={isToday ? '#ffffff50' : theme.Colors.textWhite} />
-                    </TouchableOpacity>
-                </View>
-
                 <MacroSummary summary={summary} />
-
-                <View style={styles.chatArea}>
-                    <GiftedChat
-                        messages={messages}
-                        onSend={newMessages => onSend(newMessages)}
-                        user={USER_LOCAL}
-                        isTyping={isTyping}
-                        placeholder="Log a meal or ask a question..."
-                        renderUsernameOnMessage={true}
-                        renderInputToolbar={renderCustomInputToolbar}
-                        renderComposer={renderCustomComposer}
-                        renderSend={renderCustomSend}
-                        renderBubble={renderCustomBubble}
-                        minInputToolbarHeight={normalize(50)}
-
-                        //bottomOffset={Platform.OS === 'ios' ? tabBarHeight : 0}
-                    />
-                </View>
-
-                {/* KeyboardAvoidingView is handled by GiftedChat's props, but we keep one for Android just in case */}
-                {/*{Platform.OS === 'android' && <KeyboardAvoidingView behavior="padding" />}*/}
             </SafeAreaView>
+
+            {/* 2. KeyboardAvoidingView wraps ONLY the chat */}
+            {/* It handles BOTH the keyboard and the bottom tab bar */}
+            <KeyboardAvoidingView
+                style={styles.chatContainer}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={kavOffset} // <-- This is the KEY
+            >
+                {/* 3. The Message List */}
+                <FlatList
+                    data={messages}
+                    renderItem={({ item }) => <MessageBubble item={item} />}
+                    keyExtractor={(item) => item._id.toString()}
+                    inverted // <-- This makes it a chat (bottom-up)
+                    style={styles.messageList}
+                    contentContainerStyle={styles.messageListContent}
+                />
+
+                {/* 4. The Input Bar (reusing your old styles) */}
+                <View style={styles.inputToolbar}>
+                    <TextInput
+                        style={styles.textInput}
+                        value={currentMessageText}
+                        onChangeText={setCurrentMessageText}
+                        placeholder="Log a meal or ask a question..."
+                        placeholderTextColor={theme.Colors.textPlaceholder}
+                        multiline
+                    />
+                    <TouchableOpacity
+                        onPress={handleSend}
+                        style={styles.sendContainer}
+                        disabled={!currentMessageText.trim()}
+                    >
+                        <Ionicons
+                            name="send"
+                            size={normalize(24)}
+                            color={!currentMessageText.trim() ? theme.Colors.textPlaceholder : theme.Colors.primary}
+                        />
+                    </TouchableOpacity>
+                </View>
+            </KeyboardAvoidingView>
         </LinearGradient>
     );
 }
 
-// --- Styles ---
+// --- Styles (Unchanged, but datePickerContainer is no longer used) ---
 const styles = StyleSheet.create({
     gradientBackground: {
         flex: 1,
     },
-    container: {
+    topSafe: {
+        // This view only holds the header and summary
+    },
+    container: { // No longer used on SafeAreaView
         flex: 1,
     },
     loaderContainer: {
@@ -282,20 +266,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: theme.Colors.textWhite,
     },
-    datePickerContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: theme.Spacing.padding,
-        paddingVertical: normalize(10),
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    },
-    datePickerText: {
-        fontSize: theme.Fonts.body,
-        fontWeight: '500',
-        color: theme.Colors.textWhite,
-    },
-    chatArea: {
+    chatContainer: { // This is the KAV style
         flex: 1,
         backgroundColor: theme.Colors.backgroundChat,
         borderTopLeftRadius: theme.Spacing.radius,
@@ -303,13 +274,33 @@ const styles = StyleSheet.create({
         marginTop: normalize(10),
         overflow: 'hidden',
     },
-    // Gifted Chat Styles
+    kavContainer: { // This is the KAV
+        flex: 1,
+    },
+    messageList: {
+        flex: 1,
+    },
+    messageListContent: {
+        padding: normalize(10),
+    },
+    bubbleContainer: {
+        flexDirection: 'row',
+        marginVertical: normalize(5),
+    },
+    userBubbleContainer: {
+        justifyContent: 'flex-end',
+    },
+    botBubbleContainer: {
+        justifyContent: 'flex-start',
+    },
     userBubble: {
         backgroundColor: theme.Colors.primary,
         borderBottomRightRadius: normalize(5),
         borderBottomLeftRadius: theme.Spacing.radius,
         borderTopLeftRadius: theme.Spacing.radius,
         borderTopRightRadius: theme.Spacing.radius,
+        padding: normalize(10),
+        maxWidth: '80%',
     },
     botBubble: {
         backgroundColor: theme.Colors.white,
@@ -317,6 +308,8 @@ const styles = StyleSheet.create({
         borderBottomRightRadius: theme.Spacing.radius,
         borderTopLeftRadius: theme.Spacing.radius,
         borderTopRightRadius: theme.Spacing.radius,
+        padding: normalize(10),
+        maxWidth: '80%',
     },
     userBubbleText: {
         color: theme.Colors.white,
@@ -326,25 +319,32 @@ const styles = StyleSheet.create({
         color: theme.Colors.textBlack,
         fontSize: theme.Fonts.body,
     },
+    // --- 4. FIXES FOR INPUT BAR ALIGNMENT ---
     inputToolbar: {
+        flexDirection: 'row',
+        alignItems: 'flex-end', // <-- THIS ALIGNS ITEMS TO THE BOTTOM
         backgroundColor: theme.Colors.white,
         borderTopWidth: 1,
         borderTopColor: '#eee',
         paddingHorizontal: normalize(10),
-        paddingVertical: normalize(5),
+        paddingVertical: normalize(5), // Outer padding
+        //minHeight: normalize(50),
     },
     textInput: {
+        flex: 1,
         color: theme.Colors.textBlack,
         fontSize: theme.Fonts.body,
         lineHeight: normalize(20),
-        paddingTop: Platform.OS === 'ios' ? normalize(8) : 0, // iOS padding fix
-        paddingBottom: Platform.OS === 'ios' ? normalize(8) : 0, // iOS padding fix
+        paddingTop: normalize(8),    // Consistent padding
+        paddingBottom: normalize(8), // Consistent padding
+        maxHeight: 100, // This is fine
     },
     sendContainer: {
         justifyContent: 'center',
         alignItems: 'center',
         marginLeft: normalize(10),
         marginRight: normalize(5),
-        marginBottom: Platform.OS === 'ios' ? normalize(5) : normalize(8), // OS-specific alignment
+        // This padding aligns the button with the text input's bottom line
+        paddingBottom: normalize(8),
     }
 });

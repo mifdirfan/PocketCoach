@@ -5,11 +5,11 @@ import { normalize } from './helpers';
 const Colors = {
     // Brand Colors
     primary: '#3a7bd5',
-    gradientStart: '#A8C0FF',
-    gradientEnd: '#392C78',
+    gradientStart: '#FFFFFF',
+    gradientEnd: '#CCCCCC',
 
     // Text Colors
-    textWhite: '#FFFFFF',
+    textWhite: '#000',
     textBlack: '#333333',
     textGray: '#666666',
     textPlaceholder: '#999999',

@@ -1,25 +1,25 @@
 {
     "status": "active_user",
-    "name": "Uu",
-    "email": "Iu",
+    "name": "Irfan",
+    "email": "mifdzal@gmail",
     "goal": "weight_loss",
     "weight_kg": "70",
     "start_weight_kg": "70",
-    "goal_weight_kg": "65",
+    "goal_weight_kg": "62",
     "height_cm": "170",
     "age": "22",
     "gender": "male",
     "body_fat_percentage": "0",
-    "activity_level": "moderate",
+    "activity_level": "high",
     "allergies": "None",
     "bmi": "24.2",
     "plans": {
         "diet_plan": {
-            "daily_calories_goal": 2069,
-            "daily_protein_goal_g": 180,
-            "daily_carbs_goal_g": 250,
-            "daily_fat_goal_g": 70,
-            "notes": "Daily calorie intake is set to promote fat loss with a moderate deficit. Protein focuses on muscle maintenance, carbs provide necessary energy, and fats ensure hormonal balance."
+            "daily_calories_goal": 2649,
+            "daily_protein_goal_g": 1.8,
+            "daily_carbs_goal_g": 200,
+            "daily_fat_goal_g": 40,
+            "notes": "This plan focuses on balanced macronutrients with high protein intake to support muscle maintenance during weight loss, emphasizing whole foods rich in carbs for energy and moderate fat for hormonal balance."
         },
         "workout_plan": [
             {
@@ -27,28 +27,57 @@
                 "exercises": [
                     {
                         "name": "Bench Press",
-                        "sets_reps": "3 sets of 8-10 reps"
-                    },
-                    {
-                        "name": "Chest Fly",
-                        "sets_reps": "3 sets of 10-12 reps"
+                        "sets_reps": "4 sets of 8-10 reps"
                     },
                     {
                         "name": "Pull-ups",
                         "sets_reps": "3 sets of max reps"
+                    },
+                    {
+                        "name": "Chest Fly",
+                        "sets_reps": "3 sets of 12 reps"
                     }
                 ]
             },
             {
-                "day": "Tuesday - Lower Body & Core",
+                "day": "Tuesday - Rest Day",
+                "exercises": []
+            },
+            {
+                "day": "Wednesday - Upper Body & Core",
+                "exercises": [
+                    {
+                        "name": "Overhead Press",
+                        "sets_reps": "4 sets of 8-10 reps"
+                    },
+                    {
+                        "name": "Lat pulldown",
+                        "sets_reps": "3 sets of 12 reps"
+                    },
+                    {
+                        "name": "Seated Row",
+                        "sets_reps": "3 sets of 10-12 reps"
+                    },
+                    {
+                        "name": "Front Raise",
+                        "sets_reps": "3 sets of 12 reps"
+                    },
+                    {
+                        "name": "Plank",
+                        "sets": "3 sets of 60 seconds"
+                    }
+                ]
+            },
+            {
+                "day": "Thursday - Lower Body & Core",
                 "exercises": [
                     {
                         "name": "Squat",
                         "sets_reps": "4 sets of 8-10 reps"
                     },
                     {
-                        "name": "Lunges",
-                        "sets_reps": "3 sets of 10 reps per leg"
+                        "name": "Deadlift",
+                        "sets_reps": "3 sets of max reps"
                     },
                     {
                         "name": "Leg Press",
@@ -56,53 +85,28 @@
                     },
                     {
                         "name": "Russian Twist",
-                        "sets_reps": "3 sets of 20 reps"
-                    }
-                ]
-            },
-            {
-                "day": "Wednesday - Upper Body & Full-Body",
-                "exercises": [
-                    {
-                        "name": "Push-up",
-                        "sets_reps": "4 sets of 12 reps"
+                        "sets_reps": "3 sets of 15 reps"
                     },
                     {
-                        "name": "Hammer curls",
-                        "sets_reps": "3 sets of 10 reps"
-                    },
-                    {
-                        "name": "Overhead press",
-                        "sets_reps": "3 sets of 8-10 reps"
-                    },
-                    {
-                        "name": "Kettlebell swings",
+                        "name": "Glute Bridges",
                         "sets_reps": "3 sets of 15 reps"
                     }
                 ]
             },
             {
-                "day": "Thursday - Rest Day",
-                "exercises": []
-            },
-            {
-                "day": "Friday - Full Body Circuit",
+                "day": "Friday - Full Body & Conditioning",
                 "exercises": [
                     {
-                        "name": "Deadlift",
-                        "sets_reps": "3 sets of max reps"
+                        "name": "Kettlebell Swings",
+                        "sets_reps": "4 sets of 15 reps"
                     },
                     {
-                        "name": "Plank",
-                        "sets_reps": "3 sets of 60 seconds"
-                    },
-                    {
-                        "name": "Squat",
-                        "sets_reps": "3 sets of 10 reps"
+                        "name": "Resistance Bands Row",
+                        "sets_reps": "3 sets of 12 reps"
                     },
                     {
                         "name": "Burpees",
-                        "sets_reps": "2 circuits of 10 reps"
+                        "sets": "2 sets of 10 reps"
                     }
                 ]
             },
@@ -110,12 +114,12 @@
                 "day": "Saturday - Active Recovery",
                 "exercises": [
                     {
-                        "name": "Walking",
-                        "sets_reps": "30 minutes"
+                        "name": "Light Jogging",
+                        "sets": "20 minutes"
                     },
                     {
                         "name": "Yoga",
-                        "sets_reps": "30 minutes focusing on flexibility"
+                        "sets": "30 minutes"
                     }
                 ]
             },

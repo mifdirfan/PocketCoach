@@ -13,12 +13,16 @@ export default function TabLayout() {
                 tabBarActiveTintColor: theme.Colors.primary,
                 tabBarInactiveTintColor: theme.Colors.textGray,
                 tabBarStyle: {
-                    backgroundColor: theme.Colors.white,
+                    backgroundColor: '#EEE9FF',
                     borderTopWidth: 0,
                     elevation: 10,
                     shadowOpacity: 0.1,
                     height: Platform.OS === 'android' ? normalize(60) : normalize(80),
                     paddingBottom: Platform.OS === 'android' ? normalize(5) : normalize(30),
+
+                    borderTopLeftRadius: normalize(30),
+                    borderTopRightRadius: normalize(30),
+                    position: 'absolute'
                 },
                 tabBarLabelStyle: {
                     fontSize: theme.Fonts.caption,

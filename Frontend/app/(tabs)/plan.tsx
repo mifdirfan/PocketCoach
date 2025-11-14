@@ -74,7 +74,8 @@ const DateSelector = ({
                         <Text style={[styles.dateButtonDate, isSelected && styles.dateButtonTextSelected]}>
                             {date.getDate()}
                         </Text>
-                        {isToday && <View style={styles.todayDot} />}
+                        {/* --- THIS LINE IS UPDATED --- */}
+                        {isToday && <View style={[styles.todayDot, isSelected && styles.todayDotSelected]} />}
                     </TouchableOpacity>
                 );
             })}
@@ -146,8 +147,7 @@ const DietPlanCard = ({ summary, date }: { summary: Summary | null, date: Date }
     const { total, goal } = summary;
     const calPercentage = goal.calories > 0 ? (total.calories / goal.calories) * 100 : 0;
 
-    // Show GOAL numbers if it's not today. Show TOTAL numbers if it is today.
-    const displayTotal = isToday ? total : goal;
+
 
     return (
         <View style={styles.card}>
@@ -166,16 +166,17 @@ const DietPlanCard = ({ summary, date }: { summary: Summary | null, date: Date }
                     inActiveStrokeOpacity={0.2}
                     progressValueStyle={{ fontWeight: 'bold', fontSize: theme.Fonts.circleMain, color: theme.Colors.primary }}
                     valueSuffix={'%'}
+                    showProgressValue={false}
                 />
                 <View style={styles.mainCircleTextContainer}>
-                    <Text style={styles.mainCircleValue}>{displayTotal.calories.toFixed(0)}</Text>
+                    <Text style={styles.mainCircleValue}>{total.calories.toFixed(0)}</Text>
                     <Text style={styles.mainCircleLabel}>/ {goal.calories.toFixed(0)} kcal</Text>
                 </View>
             </View>
             <View style={styles.subCirclesContainer}>
-                <MacroCircle label="Protein" value={displayTotal.protein} goal={goal.protein} color={theme.Colors.protein} />
-                <MacroCircle label="Carbs" value={displayTotal.carbs} goal={goal.carbs} color={theme.Colors.carbs} />
-                <MacroCircle label="Fat" value={displayTotal.fat} goal={goal.fat} color={theme.Colors.fat} />
+                <MacroCircle label="Protein" value={total.protein} goal={goal.protein} color={theme.Colors.protein} />
+                <MacroCircle label="Carbs" value={total.carbs} goal={goal.carbs} color={theme.Colors.carbs} />
+                <MacroCircle label="Fat" value={total.fat} goal={goal.fat} color={theme.Colors.fat} />
             </View>
         </View>
     );
@@ -364,38 +365,48 @@ const styles = StyleSheet.create({
         paddingVertical: normalize(15),
     },
     dateButton: {
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        backgroundColor: theme.Colors.white, // CHANGED from rgba
         borderRadius: normalize(15),
-        paddingVertical: normalize(12),
+        paddingVertical: normalize(20), // CHANGED from 12
         paddingHorizontal: normalize(15),
         marginRight: normalize(10),
         alignItems: 'center',
         minWidth: normalize(60),
+        // --- ADDED SHADOW ---
+        shadowColor: theme.Colors.black,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+        elevation: 3,
     },
     dateButtonSelected: {
-        backgroundColor: theme.Colors.white,
+        backgroundColor: '#5F33E1', // CHANGED from white
     },
     dateButtonDay: {
         fontSize: theme.Fonts.caption,
         fontWeight: '600',
-        color: theme.Colors.white,
+        color: theme.Colors.textBlack, // CHANGED from white
         opacity: 0.8,
     },
     dateButtonDate: {
         fontSize: normalize(18),
         fontWeight: 'bold',
-        color: theme.Colors.white,
+        color: theme.Colors.textBlack, // CHANGED from white
         marginTop: normalize(4),
     },
     dateButtonTextSelected: {
-        color: theme.Colors.primary,
+        color: theme.Colors.white, // CHANGED from primary
     },
     todayDot: {
         width: normalize(5),
         height: normalize(5),
         borderRadius: normalize(2.5),
-        backgroundColor: theme.Colors.white,
+        backgroundColor: theme.Colors.textBlack, // CHANGED from white
         marginTop: normalize(4),
+    },
+    // --- ADDED THIS NEW STYLE ---
+    todayDotSelected: {
+        backgroundColor: theme.Colors.white,
     },
     card: {
         backgroundColor: theme.Colors.cardBackground,

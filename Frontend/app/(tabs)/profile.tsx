@@ -51,7 +51,7 @@ export default function ProfileScreen() {
 
         // --- START: FIX ---
         // Use a relative path to navigate up from the (tabs) layout to the root index screen.
-        router.replace('../index');
+        router.replace('/onboarding');
         // --- END: FIX ---
     };
 
@@ -68,7 +68,7 @@ export default function ProfileScreen() {
                 <ScrollView contentContainerStyle={styles.scrollContent}>
                     <View style={styles.header}>
                         <Image
-                            source={{ uri: `https://placehold.co/120x120/FFFFFF/3a7bd5?text=${profile.name.charAt(0)}` }}
+                            source={{ uri: `@/assets/images/icon.png` }}
                             style={styles.avatar}
                         />
                         <Text style={styles.headerTitle}>{profile.name}</Text>
