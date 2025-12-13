@@ -62,6 +62,19 @@ export default function ProfileScreen() {
         return ageString;
     };
 
+    const formatBFP = (bfpString: string | null | undefined) => {
+        try {
+            // Check if bfpString is a valid number greater than 0
+            if (bfpString && parseFloat(bfpString) > 0) {
+                return `${parseFloat(bfpString).toFixed(1)} %`; // Format to one decimal place
+            }
+        } catch (e) {
+            // It's not a valid number string, so fall through
+        }
+        // If it's null, "0", "Unknown", or any invalid string, return "N/A"
+        return "N/A";
+    };
+
     return (
         <LinearGradient colors={[theme.Colors.gradientStart, theme.Colors.gradientEnd]} style={styles.gradientBackground}>
             <SafeAreaView style={styles.container}>
@@ -89,6 +102,11 @@ export default function ProfileScreen() {
                         <InfoRow label="Age" value={calculateAge(profile.age)} icon="calendar-outline" />
                         <InfoRow label="Gender" value={profile.gender} icon="transgender-outline" />
                         <InfoRow label="BMI" value={profile.bmi} icon="calculator-outline" />
+                        <InfoRow
+                            label="Body Fat %"
+                            value={formatBFP(profile.body_fat_percentage)}
+                            icon="ribbon-outline"
+                        />
                     </View>
 
                     {/* --- NEW DELETE BUTTON --- */}

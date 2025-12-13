@@ -19,11 +19,13 @@ import { v4 as uuidv4 } from 'uuid';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 
-import { AppContext } from '../../context/AppContext';
+import { AppContext, AppContextTypeWithLoading } from '../../context/AppContext';
 import { API_BASE_URL } from '../../constants/api';
 import MacroSummary from '../../components/MacroSummary';
-import { AppContextType, Summary, Profile, IMessage, User } from '../../constants/types';
-import { normalize, formatDate, formatQueryDate } from '../../constants/helpers';
+// --- MODIFIED ---
+// AppContextType is no longer needed directly
+import { Summary, Profile, IMessage, User } from '../../constants/types';
+import { normalize, formatQueryDate, formatTime } from '../../constants/helpers';
 import { theme } from '../../constants/theme';
 
 // --- User/Bot Definitions (Unchanged) ---
@@ -57,7 +59,8 @@ const MessageBubble = ({ item }: { item: IMessage }) => {
 
 // --- Main Chat Screen ---
 export default function ChatScreen() {
-    const context = useContext(AppContext);
+    const context = useContext(AppContext) as AppContextTypeWithLoading | null;
+
 
     const tabBarHeight = useBottomTabBarHeight(); // This is the FULL height (e.g., 84)
     const insets = useSafeAreaInsets();      // This gets the bottom notch height (e.g., 34)
@@ -71,10 +74,11 @@ export default function ChatScreen() {
     const [isTyping, setIsTyping] = useState(false);
     const [summary, setSummary] = useState<Summary | null>(null);
     const [currentMessageText, setCurrentMessageText] = useState("");
-    // const [displayDate, setDisplayDate] = useState(new Date()); // <-- REMOVED
+    const [pendingFoodName, setPendingFoodName] = useState<string | null>(null);
+    const [isSummaryLoading, setIsSummaryLoading] = useState(false);
 
     // Show loader if context is not ready
-    if (!context) {
+    if (!context || context.isRestoring) {
         return (
             <LinearGradient colors={[theme.Colors.gradientStart, theme.Colors.gradientEnd]} style={styles.loaderContainer}>
                 <ActivityIndicator size="large" color={theme.Colors.white} />
@@ -86,11 +90,17 @@ export default function ChatScreen() {
     // --- Data Fetching ---
     // This function now *only* fetches for the date it's given
     const fetchSummary = useCallback((date: Date) => {
+        setIsSummaryLoading(true); // <-- Start loading
         const dateString = formatQueryDate(date);
         fetch(`${API_BASE_URL}/get_summary?date=${dateString}`)
             .then(res => res.json())
-            .then((data: Summary) => setSummary(data))
-            .catch(err => console.error("Summary fetch error:", err));
+            .then((data: Summary) => {
+                setSummary(data);
+            })
+            .catch(err => console.error("Summary fetch error:", err))
+            .finally(() => {
+                setIsSummaryLoading(false); // <-- Stop loading
+            });
     }, []);
 
     // Fetch summary for TODAY on load
@@ -100,33 +110,48 @@ export default function ChatScreen() {
 
     // --- Welcome Message (Unchanged) ---
     useEffect(() => {
-        if (profile) {
+        // We add "messages.length === 0" to prevent it from
+        // wiping the chat history on every profile update.
+        if (profile && messages.length === 0) {
             setMessages([
                 {
                     _id: uuidv4(),
                     text: `안녕하세요, ${profile?.name || '사용자'}님! '${profile?.goal || '목표'}' 달성을 도울 준비가 되었습니다.`,
-                    createdAt: Date.now(),
+                    createdAt: new Date(), // Use new Date() to be consistent
                     user: BOT_USER,
                 },
             ]);
         }
-    }, [profile]);
+        // We also add messages.length to the dependency array
+    }, [profile, messages.length]);
 
     // --- Send Handler (SIMPLIFIED) ---
     const onSendBackend = useCallback((newMessages: IMessage[] = []) => {
         const userMessage = newMessages[0];
 
-        // --- Date check is REMOVED ---
-        // We assume all logs/updates are for today
-
         setMessages(previousMessages => [userMessage, ...previousMessages]);
         setIsTyping(true);
         setCurrentMessageText("");
 
+
+
+        // --- THIS IS THE FIX ---
+        // Get the app's current date as a 'YYYY-MM-DD' string
+        const appDate = new Date();
+        const dateString = formatQueryDate(appDate); // 'YYYY-MM-DD'
+        const timeString = formatTime(appDate);     // 'HH:MM'
+
+        const payload = {
+            message: userMessage.text,
+            pending_food_name: pendingFoodName,
+            date: dateString, // Send the app's local date
+            time: timeString  // <-- Send the app's local time
+        };
+
         fetch(`${API_BASE_URL}/chat`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: userMessage.text }),
+            body: JSON.stringify(payload), // Send the new payload
         })
             .then(res => res.json())
             .then(data => {
@@ -138,6 +163,18 @@ export default function ChatScreen() {
                     user: BOT_USER,
                 };
                 setMessages(previousMessages => [botResponse, ...previousMessages]);
+
+                // --- NEW: Handle backend actions ---
+                if (data.action_required === 'add_new_food' && data.food_name) {
+                    // The backend is asking for ingredients for this food.
+                    // We set it in our state.
+                    setPendingFoodName(data.food_name);
+                } else {
+                    // Any other successful response (including the one *after*
+                    // we submit ingredients) means we are done with this flow.
+                    // We clear the pending state.
+                    setPendingFoodName(null);
+                }
 
                 if (data.profile) {
                     setProfile(data.profile as Profile);
@@ -158,7 +195,7 @@ export default function ChatScreen() {
                 };
                 setMessages(previousMessages => [errorResponse, ...previousMessages]);
             });
-    }, [fetchSummary, setProfile]);
+    }, [fetchSummary, setProfile, pendingFoodName]);
 
     const handleSend = () => {
         const text = currentMessageText.trim();
@@ -181,13 +218,16 @@ export default function ChatScreen() {
 
     return (
         <LinearGradient colors={[theme.Colors.gradientStart, theme.Colors.gradientEnd]} style={styles.gradientBackground}>
-
-            {/* 1. SafeArea for the TOP notch ONLY */}
             <SafeAreaView style={styles.topSafe} edges={['top']}>
                 <View style={styles.chatHeader}>
                     <Text style={styles.chatHeaderTitle}>Chat</Text>
-                    <TouchableOpacity>
-                        <Ionicons name="ellipsis-horizontal" size={theme.Fonts.h1} color={theme.Colors.textWhite} />
+                    {/* --- 4. ADD REFRESH BUTTON --- */}
+                    <TouchableOpacity onPress={() => fetchSummary(new Date())} disabled={isSummaryLoading}>
+                        {isSummaryLoading ? (
+                            <ActivityIndicator color={theme.Colors.white} />
+                        ) : (
+                            <Ionicons name="refresh" size={normalize(28)} color={theme.Colors.white} />
+                        )}
                     </TouchableOpacity>
                 </View>
                 <MacroSummary summary={summary} />

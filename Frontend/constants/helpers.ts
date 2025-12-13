@@ -11,14 +11,17 @@ export const normalize = (size: number): number => {
 
 // --- Date Formatting ---
 export const formatQueryDate = (date: Date): string => {
-    return date.toISOString().split('T')[0]; // YYYY-MM-DD
-}
+    const year = date.getFullYear();
+    // getMonth() is 0-indexed (0=Jan), so we add 1
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
 
-export const formatDate = (date: Date): string => {
-    const options: Intl.DateTimeFormatOptions = {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-    };
-    return date.toLocaleDateString('en-GB', options);
+    return `${year}-${month}-${day}`;
+};
+
+export const formatTime = (date: Date): string => {
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+
+    return `${hours}:${minutes}`;
 };

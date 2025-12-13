@@ -9,6 +9,7 @@ export default function TabLayout() {
     return (
         <Tabs
             screenOptions={{
+
                 headerShown: false,
                 tabBarActiveTintColor: theme.Colors.primary,
                 tabBarInactiveTintColor: theme.Colors.textGray,
@@ -22,7 +23,7 @@ export default function TabLayout() {
 
                     borderTopLeftRadius: normalize(30),
                     borderTopRightRadius: normalize(30),
-                    position: 'absolute'
+                    // position: 'absolute'
                 },
                 tabBarLabelStyle: {
                     fontSize: theme.Fonts.caption,

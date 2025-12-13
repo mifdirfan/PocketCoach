@@ -3,14 +3,14 @@ import json
 import ollama
 import pandas as pd
 import numpy as np
-import faiss
+import faiss  # Make sure you have 'pip install faiss-cpu'
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from datetime import datetime
 import re
 import math
 import glob
-import pypdf  # --- NEW: Using pypdf instead of fitz
+import pypdf  # Using pypdf
 from sentence_transformers import SentenceTransformer
 
 # --- 1. INITIAL SETUP ---
@@ -23,21 +23,23 @@ MEAL_LOGS_FILE = "meal_logs.json"
 KNOWLEDGE_DIR = "knowledge"
 FOOD_DB_PATH = os.path.join(KNOWLEDGE_DIR, "master_food_db.csv")
 EXERCISE_DB_PATH = os.path.join(KNOWLEDGE_DIR, "exercise.json")
+CUSTOM_FOOD_DB_PATH = os.path.join(KNOWLEDGE_DIR, "user_custom_foods.csv")
 
 # RAG components
 embedding_model = None
+embedding_dimension = 0
 
 # Brain 1: For structured data (food/exercises)
 food_exercise_index = None
-food_exercise_data = []
+food_exercise_data = [] # Will store {"type": "food", "data": {...}} or {"type": "exercise", "data": {...}}
 
 # Brain 2: For unstructured knowledge (PDFs)
 pdf_index = None
-pdf_data = []
+pdf_data = [] # Will store {"text": "...", "source": "..."}
 
 
 # --- 3. HELPER FUNCTIONS (File I/O & Calculations) ---
-# (All these functions are unchanged)
+# (These functions are all correct)
 def load_user_profile():
     if os.path.exists(USER_PROFILE_FILE):
         with open(USER_PROFILE_FILE, 'r', encoding='utf-8') as f:
@@ -58,10 +60,15 @@ def save_meal_logs(logs):
     with open(MEAL_LOGS_FILE, 'w', encoding='utf-8') as f:
         json.dump(logs, f, ensure_ascii=False, indent=4)
 
-def add_meal_to_log(meal_entry, date_str):
+def add_meal_to_log(meal_entry, date_str, time_str): # <-- NEW
     logs = load_meal_logs()
     if date_str not in logs:
         logs[date_str] = []
+
+    # --- ADD THIS LINE ---
+    meal_entry["time"] = time_str # Use the time from the app
+    # --- END ADD ---
+
     logs[date_str].append(meal_entry)
     save_meal_logs(logs)
 
@@ -100,7 +107,6 @@ def calculate_bfp_us_navy(gender, height_cm, waist_cm, neck_cm):
     return 0
 
 def calculate_tdee(profile):
-    """Calculates TDEE using Mifflin-St Jeor BMR and activity level."""
     try:
         weight_kg = float(profile.get("weight_kg", 0))
         height_cm = float(profile.get("height_cm", 0))
@@ -109,16 +115,13 @@ def calculate_tdee(profile):
         activity_level = profile.get("activity_level", "low").lower()
 
         if weight_kg == 0 or height_cm == 0 or age == 0:
-            print("⚠️ Warning: Incomplete profile data, defaulting TDEE to 2000.")
             return 2000 # Return a safe default
 
-        # 1. Calculate BMR (Mifflin-St Jeor)
         if gender == 'male':
             bmr = (10 * weight_kg) + (6.25 * height_cm) - (5 * age) + 5
-        else: # 'female'
+        else:
             bmr = (10 * weight_kg) + (6.25 * height_cm) - (5 * age) - 161
 
-        # 2. Get Activity Multiplier
         if activity_level == 'high':
             multiplier = 1.9
         elif activity_level == 'moderate':
@@ -126,18 +129,17 @@ def calculate_tdee(profile):
         else: # 'low'
             multiplier = 1.2
 
-        # 3. Calculate TDEE (Maintenance Calories)
         tdee = bmr * multiplier
         return int(round(tdee, 0))
     except Exception as e:
         print(f"❌ Error in calculate_TDEE: {e}")
-        return 2000 # Safe default
+        return 2000
 
 
-# --- 4. RAG SETUP (UPDATED) ---
+# --- 4. RAG SETUP (FIXED) ---
 
 def setup_rag_pipeline():
-    global embedding_model, food_exercise_index, food_exercise_data, pdf_index, pdf_data
+    global embedding_model, embedding_dimension, food_exercise_index, food_exercise_data, pdf_index, pdf_data
 
     try:
         model_name = 'jhgan/ko-sbert-nli'
@@ -149,12 +151,27 @@ def setup_rag_pipeline():
         food_exercise_texts = []
 
         # Load Food DB
-        food_db_df = pd.read_csv(FOOD_DB_PATH, encoding='cp949')
+        food_db_df = pd.read_csv(FOOD_DB_PATH, encoding='cp949') # Use cp949 for government data
         for index, row in food_db_df.iterrows():
             text = row['식품명'].strip()
             food_exercise_texts.append(text)
             food_exercise_data.append({"type": "food", "data": row.to_dict()})
         print(f"📄 Food DB loaded: {len(food_db_df)} items.")
+
+        # --- FIX: Load Custom Food DB with utf-8 ---
+        if os.path.exists(CUSTOM_FOOD_DB_PATH):
+            try:
+                # Custom file is written in utf-8, so read it as utf-8
+                custom_food_df = pd.read_csv(CUSTOM_FOOD_DB_PATH, encoding='utf-8')
+                for index, row in custom_food_df.iterrows():
+                    text = row['식품명'].strip()
+                    food_exercise_texts.append(text)
+                    food_exercise_data.append({"type": "food", "data": row.to_dict()})
+                print(f"🧑‍🍳 Custom Food DB loaded: {len(custom_food_df)} items.")
+            except Exception as e:
+                print(f"⚠️ Warning: Could not load Custom Food DB: {e}")
+        else:
+            print("ℹ️ No Custom Food DB found. One will be created if a user adds a new food.")
 
         # Load Exercise DB
         with open(EXERCISE_DB_PATH, 'r', encoding='utf-8') as f:
@@ -165,7 +182,7 @@ def setup_rag_pipeline():
             food_exercise_data.append({"type": "exercise", "data": ex})
         print(f"🏋️ Exercise DB loaded: {len(exercise_list)} exercises.")
 
-        # Build FAISS index for Brain 1
+        # --- FIX: Build FAISS index for Brain 1 ---
         print("⏳ Generating food/exercise embeddings...")
         food_exercise_embeddings = embedding_model.encode(food_exercise_texts,
                                                           convert_to_tensor=False,
@@ -181,7 +198,6 @@ def setup_rag_pipeline():
 
         for pdf_path in pdf_files:
             try:
-                # --- NEW PYPDF CODE ---
                 reader = pypdf.PdfReader(pdf_path)
                 for page_num, page in enumerate(reader.pages):
                     text = page.extract_text()
@@ -195,13 +211,12 @@ def setup_rag_pipeline():
                         if len(chunk_cleaned) > 150:
                             pdf_texts.append(chunk_cleaned)
                             pdf_data.append({"text": chunk_cleaned, "source": f"{os.path.basename(pdf_path)}"})
-                # --- END OF NEW PYPDF CODE ---
                 print(f"🧠 Successfully processed PDF: {os.path.basename(pdf_path)}")
             except Exception as e:
                 print(f"❌ Error processing PDF {pdf_path}: {e}")
 
         if pdf_texts:
-            # Build FAISS index for Brain 2
+            # --- FIX: Build FAISS index for Brain 2 ---
             print("⏳ Generating PDF knowledge embeddings...")
             pdf_embeddings = embedding_model.encode(pdf_texts,
                                                     convert_to_tensor=False,
@@ -218,7 +233,7 @@ def setup_rag_pipeline():
         print(f"❌ Error during RAG setup: {e}")
         return False
 
-# --- 5. CORE AI FUNCTIONS (UPDATED) ---
+# --- 5. CORE AI FUNCTIONS (FIXED) ---
 
 def find_food_data(food_name_query):
     """Finds food data using RAG Brain 1 (FAISS)."""
@@ -230,13 +245,25 @@ def find_food_data(food_name_query):
 
     if best_match["type"] == "food" and best_match_score < 1.0:
         food_data = best_match["data"]
+
+        # --- START: FIX FOR 'g' and 'ml' ---
+        # Get the quantity string (e.g., "100g", "100ml", or "100")
+        quantity_str = str(food_data.get("영양성분함량기준량", 100) or 100)
+
+        # Use regex to find the first sequence of digits (and decimal)
+        quantity_match = re.search(r'[\d\.]+', quantity_str)
+
+        # Convert the extracted number, defaulting to 100 if it fails
+        quantity = float(quantity_match.group(0)) if quantity_match else 100
+        # --- END: FIX ---
+
         return {
             "name": food_data["식품명"],
             "calories": float(food_data.get("에너지(kcal)", 0) or 0),
             "protein": float(food_data.get("단백질(g)", 0) or 0),
             "fat": float(food_data.get("지방(g)", 0) or 0),
             "carbs": float(food_data.get("탄수화물(g)", 0) or 0),
-            "quantity": float(food_data.get("영양성분함량기준량", 100) or 100)
+            "quantity": quantity # Use the cleaned quantity
         }
     return None
 
@@ -248,7 +275,7 @@ def find_exercise_data(exercise_name_query):
     best_match_score = D[0][0]
     best_match = food_exercise_data[best_match_index]
 
-    if best_match["type"] == "exercise" and best_match_score < 1.0:
+    if best_match["type"] == "exercise" and best_match_score < 1.8:
         return best_match["data"]
     return None
 
@@ -262,7 +289,6 @@ def find_knowledge_from_pdfs(question):
 
     context = ""
     for idx, i in enumerate(I[0]):
-        # Only add if the chunk is relevant (lower score is better)
         if D[0][idx] < 1.2:
             context += pdf_data[i]["text"] + f"\n(Source: {pdf_data[i]['source']})\n---\n"
 
@@ -284,8 +310,6 @@ def call_ollama(prompt):
 
 def generate_plans_from_profile(profile):
     goal = profile.get('goal')
-
-    # --- START: NEW TDEE AND GOAL CALCULATION ---
     maintenance_calories = calculate_tdee(profile)
     target_calories = 0
     strategy = ""
@@ -293,42 +317,32 @@ def generate_plans_from_profile(profile):
 
     if goal == 'weight_loss':
         target_calories = maintenance_calories - 500
-        strategy = f"The user's primary goal is 'Weight Loss'. Their maintenance calories are {maintenance_calories} kcal. We are setting a target of {target_calories} kcal (a 500 kcal deficit) to promote fat loss while maintaining muscle."
-        knowledge_query = "Principles of workout routines for weight loss and fat burning, including cardio and resistance training."
+        strategy = f"The user's goal is 'Weight Loss'. Their maintenance is {maintenance_calories} kcal. We are setting a {target_calories} kcal target (a 500 kcal deficit)."
+        knowledge_query = "Principles of workout routines for weight loss and fat burning."
     elif goal == 'muscle_gain':
         target_calories = maintenance_calories + 300
-        strategy = f"The user's primary goal is 'Muscle Gain'. Their maintenance calories are {maintenance_calories} kcal. We are setting a target of {target_calories} kcal (a 300 kcal surplus) to maximize muscle growth."
-        knowledge_query = "Principles of muscle hypertrophy, progressive overload, and workout splits for muscle gain."
+        strategy = f"The user's goal is 'Muscle Gain'. Their maintenance is {maintenance_calories} kcal. We are setting a {target_calories} kcal target (a 300 kcal surplus)."
+        knowledge_query = "Principles of muscle hypertrophy and progressive overload."
     elif goal == 'recomposition':
         target_calories = maintenance_calories
-        strategy = f"The user's primary goal is 'Body Recomposition'. Their maintenance calories are {maintenance_calories} kcal. We are setting a target of {target_calories} kcal (maintenance) to build muscle and lose fat simultaneously."
-        knowledge_query = "Principles of body recomposition, combining muscle gain and fat loss, and nutrient timing."
+        strategy = f"The user's goal is 'Body Recomposition'. Their maintenance is {maintenance_calories} kcal. We are setting a {target_calories} kcal target (maintenance)."
+        knowledge_query = "Principles of body recomposition."
     else:
-        # Default to weight loss if goal is not recognized
         target_calories = maintenance_calories - 500
-        strategy = f"The user's goal ('{goal}') is not recognized, defaulting to 'Weight Loss'. Their maintenance calories are {maintenance_calories} kcal. Setting a target of {target_calories} kcal."
+        strategy = f"Defaulting to 'Weight Loss'. Maintenance is {maintenance_calories} kcal. Setting a {target_calories} kcal target."
         knowledge_query = "General workout principles."
 
     print(f"🧠 Calculated TDEE: {maintenance_calories} kcal, Target: {target_calories} kcal for goal: {goal}")
-    # --- END: NEW TDEE AND GOAL CALCULATION ---
 
     profile_for_prompt = profile.copy()
-    bfp = profile_for_prompt.get("body_fat_percentage")
-
-    # If BFP is "0", None, or an empty string, set it to "Unknown"
-    # so the AI doesn't misinterpret "0" as 0%.
     try:
-        if not bfp or float(bfp) == 0:
+        if not profile_for_prompt.get("body_fat_percentage") or float(profile_for_prompt.get("body_fat_percentage", "0")) == 0:
             profile_for_prompt["body_fat_percentage"] = "Unknown"
     except ValueError:
-        profile_for_prompt["body_fat_percentage"] = "Unknown" # Handle any other invalid strings
+        profile_for_prompt["body_fat_percentage"] = "Unknown"
 
-    # Pass the modified profile to the AI
     profile_str = json.dumps(profile_for_prompt, ensure_ascii=False)
 
-    profile_str = json.dumps(profile, ensure_ascii=False)
-
-    # --- RAG Logic (Unchanged) ---
     print(f"🧠 Querying Brain 2 for: {knowledge_query}")
     pdf_knowledge = find_knowledge_from_pdfs(knowledge_query)
     available_exercises_data = [item['data'] for item in food_exercise_data if item['type'] == 'exercise']
@@ -338,7 +352,6 @@ def generate_plans_from_profile(profile):
     exercises_list_str = "\n".join(exercise_info_list)
     print(f"🏋️ Found {len(available_exercises_data)} exercises for the LLM to use.")
 
-    # --- START: REVISED PROMPT ---
     prompt = f"""
     You are an expert fitness coach. A user has this profile:
     {profile_str}
@@ -346,44 +359,42 @@ def generate_plans_from_profile(profile):
     Here is the diet and workout strategy:
     {strategy}
 
-    Based on this, the user's "daily_calories_goal" MUST be exactly {target_calories}.
-    You must also generate goals for protein, carbs, and fat that add up to this calorie goal.
+    Your "daily_calories_goal" MUST be exactly {target_calories}.
+    Generate protein, carbs, and fat goals that add up to this calorie goal.
 
-    First, use the following fitness principles from the knowledge base as your guide for creating the workout plan:
+    Use the following fitness principles from the knowledge base as your guide:
     ---[FITNESS PRINCIPLES]---
     {pdf_knowledge}
     ---[END PRINCIPLES]---
 
-    You MUST create an optimal 7-day workout plan based on the user's goal and the fitness principles.
-    You must decide the best workout split and when to place rest days.
+    You MUST create an optimal 7-day workout plan based on the user's goal.
+    You MUST decide the best workout split and rest days.
     
-    For each workout day you create, you MUST select appropriate exercises from the following list.
+    For each workout day, you MUST select exercises from the following list:
     ---[AVAILABLE EXERCISES]---
     {exercises_list_str}
     ---[END EXERCISES]---
 
-    For each selected exercise, generate a "sets_reps" (e.g., "3 sets of 8-10 reps").
-
-    Your response MUST be in this exact JSON format, with exactly 7 items in the "workout_plan" array.
+    For each selected exercise, generate "sets_reps".
     For "Rest Day", the "exercises" array MUST be empty [].
-    DO NOT include comments or any text outside the JSON block.
+    DO NOT include text outside the JSON block.
     
     {{
       "diet_plan": {{
         "daily_calories_goal": {target_calories},
-        "daily_protein_goal_g": <number (e.g., 1.8-2.2g/kg based on strategy)>,
-        "daily_carbs_goal_g": <number (balance remaining calories)>,
-        "daily_fat_goal_g": <number (balance remaining calories)>,
+        "daily_protein_goal_g": <number>,
+        "daily_carbs_goal_g": <number>,
+        "daily_fat_goal_g": <number>,
         "notes": "<A 2-3 sentence summary of the diet strategy in Korean>"
       }},
       "workout_plan": [
-        {{ "day": "Monday - <Your Chosen Workout Type or Rest>", "exercises": [{{ "name": "<Selected Exercise Name>", "sets_reps": "<Generated sets/reps>" }}] }},
-        {{ "day": "Tuesday - <Your Chosen Workout Type or Rest>", "exercises": [{{ "name": "<Selected Exercise Name>", "sets_reps": "<Generated sets/reps>" }}] }},
-        {{ "day": "Wednesday - <Your Chosen Workout Type or Rest>", "exercises": [{{ "name": "<Selected Exercise Name>", "sets_reps": "<Generated sets/reps>" }}] }},
-        {{ "day": "Thursday - <Your Chosen Workout Type or Rest>", "exercises": [{{ "name": "<Selected Exercise Name>", "sets_reps": "<Generated sets/reps>" }}] }},
-        {{ "day": "Friday - <Your Chosen Workout Type or Rest>", "exercises": [{{ "name": "<Selected Exercise Name>", "sets_reps": "<Generated sets/reps>" }}] }},
-        {{ "day": "Saturday - <Your Chosen Workout Type or Rest>", "exercises": [{{ "name": "<Selected Exercise Name>", "sets_reps": "<Generated sets/reps>" }}] }},
-        {{ "day": "Sunday - <Your Chosen Workout Type or Rest>", "exercises": [{{ "name": "<Selected Exercise Name>", "sets_reps": "<Generated sets/reps>" }}] }}
+        {{ "day": "Monday - <Workout Type>", "exercises": [{{ "name": "<Exercise Name>", "sets_reps": "<sets/reps>" }}] }},
+        {{ "day": "Tuesday - <Workout Type or Rest>", "exercises": [] }},
+        {{ "day": "Wednesday - <Workout Type>", "exercises": [{{ "name": "<Exercise Name>", "sets_reps": "<sets/reps>" }}] }},
+        {{ "day": "Thursday - <Workout Type or Rest>", "exercises": [] }},
+        {{ "day": "Friday - <Workout Type>", "exercises": [{{ "name": "<Exercise Name>", "sets_reps": "<sets/reps>" }}] }},
+        {{ "day": "Saturday - <Workout Type or Rest>", "exercises": [] }},
+        {{ "day": "Sunday - <Workout Type or Rest>", "exercises": [] }}
       ]
     }}
     """
@@ -391,35 +402,37 @@ def generate_plans_from_profile(profile):
     response_str = call_ollama(prompt)
 
     try:
-        # --- (Your JSON cleaning logic is unchanged and still necessary) ---
+        # --- START: FIX ---
         json_match = re.search(r'\{.*\}', response_str, re.DOTALL)
-
         if not json_match:
             print(f"Error: No JSON object found in LLM response: {response_str}")
             return {"error": "Failed to generate plan. AI returned no JSON."}
 
+        # 1. 주석이 포함된 JSON 문자열 추출
         json_string_with_comments = json_match.group(0)
+
+        # 2. '//'로 시작하는 모든 주석을 제거
         json_string_no_comments = re.sub(r'//.*', '', json_string_with_comments)
-        # --- (End of JSON cleaning logic) ---
 
+        # 3. 깨끗해진 JSON 문자열을 파싱
         plan_data = json.loads(json_string_no_comments)
+        # --- END: FIX ---
 
-        # This part is still crucial. The LLM only returns the exercise *name*.
-        # This code finds the full exercise data (like the youtube_link)
-        # and adds it to the plan.
         if "workout_plan" in plan_data:
             for day_plan in plan_data.get("workout_plan", []):
                 for ex in day_plan.get("exercises", []):
-                    full_ex_data = find_exercise_data(ex["name"])
-                    if full_ex_data:
-                        ex["youtube_link"] = full_ex_data.get("youtube_link")
-                        ex["target-muscle"] = full_ex_data.get("target-muscle")
+                    if "name" in ex: # "Rest Day"의 빈 배열 오류 방지
+                        full_ex_data = find_exercise_data(ex["name"])
+                        if full_ex_data:
+                            ex["youtube_link"] = full_ex_data.get("youtube_link")
+                            ex["target-muscle"] = full_ex_data.get("target-muscle")
         return plan_data
     except json.JSONDecodeError:
+        # 디버깅을 위해 모든 단계의 문자열을 출력합니다.
         print(f"Error decoding LLM response. Raw: {response_str} | Extracted: {json_string_with_comments} | Cleaned: {json_string_no_comments}")
         return {"error": "Failed to generate plan. AI returned invalid format."}
 
-# --- 6. FLASK API ENDPOINTS (UPDATED) ---
+# --- 6. FLASK API ENDPOINTS (FIXED) ---
 
 @app.route("/check_status", methods=["GET"])
 def check_status():
@@ -454,116 +467,213 @@ def save_profile():
 def chat():
     data = request.json
     message = data.get("message", "")
+    pending_food_name = data.get("pending_food_name")
+
+    date_str = data.get("date", datetime.now().strftime('%Y-%m-%d'))
+    # --- ADD THIS LINE ---
+    time_str = data.get("time", datetime.now().strftime('%H:%M'))
+    # --- END ADD ---
+
+
     profile = load_user_profile()
 
-    # Intent Router
-    update_match = re.search(r"update|업데이트|변경", message, re.IGNORECASE)
-    bfp_match = re.search(r"neck|waist|목|허리", message, re.IGNORECASE)
+
+    # --- Intent 3: Add New Food (MUST BE CHECKED FIRST) ---
+    if pending_food_name:
+        print("Intent: Add New Food")
+        try:
+            prompt_parse = f"""
+            Parse the user's ingredient list into a JSON list.
+            User message: "{message}"
+            Example response: [{{"food": "pork", "weight": 100}}, {{"food": "tofu", "weight": 50}}]
+            Your response MUST be ONLY the JSON list.
+            """
+            ingredients_str = call_ollama(prompt_parse)
+            # LLM 응답에서 JSON 리스트만 추출
+            json_match = re.search(r'\[.*\]', ingredients_str, re.DOTALL)
+            if not json_match:
+                print(f"Add new food error: LLM did not return JSON list. Raw: {ingredients_str}")
+                raise ValueError("LLM did not return JSON list")
+            ingredients = json.loads(json_match.group(0))
+
+            total_macros = {"calories": 0, "protein": 0, "carbs": 0, "fat": 0}
+            total_weight = 0
+
+            for item in ingredients:
+                food_data = find_food_data(item['food'])
+                if food_data:
+                    weight = float(item['weight'])
+                    quantity = float(food_data["quantity"])
+                    factor = weight / quantity
+                    total_macros["calories"] += food_data["calories"] * factor
+                    total_macros["protein"] += food_data["protein"] * factor
+                    total_macros["carbs"] += food_data["carbs"] * factor
+                    total_macros["fat"] += food_data["fat"] * factor
+                    total_weight += weight
+
+            if total_weight > 0:
+                factor_100g = 100 / total_weight
+                new_food_data = {
+                    "식품명": pending_food_name,
+                    "영양성분함량기준량": 100,
+                    "에너지(kcal)": round(total_macros["calories"] * factor_100g, 2),
+                    "단백질(g)": round(total_macros["protein"] * factor_100g, 2),
+                    "지방(g)": round(total_macros["fat"] * factor_100g, 2),
+                    "탄수화물(g)": round(total_macros["carbs"] * factor_100g, 2),
+                }
+
+                new_food_df = pd.DataFrame([new_food_data])
+                new_food_df.to_csv(
+                    CUSTOM_FOOD_DB_PATH,
+                    mode='a',
+                    header=not os.path.exists(CUSTOM_FOOD_DB_PATH),
+                    index=False,
+                    encoding='utf-8' # Use utf-8
+                )
+
+                return jsonify({"response": f"성공! '{pending_food_name}'을(를) 사용자 맞춤 음식 DB에 저장했습니다. 새 음식을 사용하려면 서버를 재시작해주세요."})
+            else:
+                return jsonify({"response": "입력한 재료를 DB에서 찾을 수 없습니다. 다시 시도해 주세요."})
+        except Exception as e:
+            print(f"Error adding new food: {e}")
+            return jsonify({"response": "재료를 분석하는 데 실패했습니다. '돼지고기 100g, 두부 50g' 처럼 간단한 목록으로 입력해 주세요."})
+
+    # --- Standard Intent Router (FIXED ORDER AND REGEX) ---
+    # BFP match is now MORE specific to avoid conflict with "목표" (goal)
+    bfp_match = re.search(r"(목|neck)\s*둘레|(허리|waist)\s*둘레", message, re.IGNORECASE)
+    update_match = re.search(r"update|업데이트|변경|설정", message, re.IGNORECASE)
     log_match = re.search(r"(\d+)\s*g|그램", message, re.IGNORECASE)
 
-    # --- Intent 1: Profile Update ---
-    if update_match:
-        print("Intent: Profile Update")
-        weight_match = re.search(r"weight to (\d+\.?\d*)\s*kg", message)
-        goal_weight_match = re.search(r"goal weight to (\d+\.?\d*)\s*kg", message)
-
-        updated = False
-        if weight_match:
-            profile["weight_kg"] = weight_match.group(1)
-            profile["bmi"] = str(calculate_bmi(profile["weight_kg"], profile["height_cm"]))
-            updated = True
-        if goal_weight_match:
-            profile["goal_weight_kg"] = goal_weight_match.group(1)
-            updated = True
-
-        if updated:
-            new_plans = generate_plans_from_profile(profile)
-            profile["plans"] = new_plans
-            save_user_profile(profile)
-            return jsonify({
-                "response": "Got it. I've updated your profile and regenerated your plans. Check the 'Plan' tab!",
-                "profile": profile
-            })
-        else:
-            return jsonify({"response": "I understood you want to update, but I couldn't find the right field. Please try again (e.g., 'update my weight to 78kg')."})
-
-    # --- Intent 2: Body Fat Percentage Calculation ---
-    elif bfp_match:
+    # --- Intent 2: BFP Calculation (CHECKED FIRST) ---
+    if bfp_match:
         print("Intent: BFP Calculation")
-        neck_waist_match = re.search(r"neck is (\d+\.?\d*)\s*cm and waist is (\d+\.?\d*)\s*cm", message)
-        if neck_waist_match:
-            neck_cm = neck_waist_match.group(1)
-            waist_cm = neck_waist_match.group(2)
-            bfp = calculate_bfp_us_navy(profile["gender"], profile["height_cm"], waist_cm, neck_cm)
-            if bfp > 0:
-                profile["body_fat_percentage"] = str(bfp)
-                save_user_profile(profile)
-                return jsonify({
-                    "response": f"Thanks! Your estimated body fat is {bfp}%. I've saved this to your profile.",
-                    "profile": profile
-                })
-            else:
-                return jsonify({"response": "I couldn't calculate that. Please check the numbers and try again."})
-        else:
-            return jsonify({"response": "I can help with that! Please provide your measurements in this format: 'My neck is [number]cm and my waist is [number]cm'"})
+        try:
+            prompt = f"""
+            Extract neck and waist measurements in cm from: "{message}"
+            Respond ONLY with JSON: {{"neck_cm": <number_or_null>, "waist_cm": <number_or_null>}}
+            Example for '내 목 둘레는 38cm이고 허리 둘레는 82cm야': {{"neck_cm": 38, "waist_cm": 82}}
+            """
+            measure_str = call_ollama(prompt)
+            json_match = re.search(r'\{.*\}', measure_str, re.DOTALL)
 
-    # --- Intent 3: Meal Logging ---
+            if not json_match:
+                print(f"BFP error: LLM did not return JSON. Raw: {measure_str}")
+                raise ValueError("LLM did not return JSON")
+
+            measure_data = json.loads(json_match.group(0))
+            neck_cm = measure_data.get("neck_cm")
+            waist_cm = measure_data.get("waist_cm")
+
+            if neck_cm and waist_cm:
+                bfp = calculate_bfp_us_navy(profile["gender"], profile["height_cm"], waist_cm, neck_cm)
+                if bfp > 0:
+                    profile["body_fat_percentage"] = str(bfp); save_user_profile(profile)
+                    return jsonify({"response": f"감사합니다! 예상 체지방률은 {bfp}%입니다. 프로필에 저장했어요.", "profile": profile})
+                else:
+                    return jsonify({"response": "수치를 계산할 수 없습니다. 숫자를 다시 확인해주세요."})
+            else:
+                # This is the prompt the user was seeing incorrectly
+                return jsonify({"response": "도와드릴게요! '내 목 둘레는 [숫자]cm이고 허리 둘레는 [숫자]cm입니다' 형식으로 알려주세요."})
+        except Exception as e:
+            print(f"BFP error: {e}")
+            return jsonify({"response": "측정값을 이해하는 데 실패했습니다. '내 목 둘레는 [숫자]cm이고 허리 둘레는 [숫자]cm입니다' 형식으로 알려주세요."})
+
+    # --- Intent 1: Profile Update (CHECKED SECOND) ---
+    elif update_match:
+        print("Intent: Profile Update")
+        try:
+            prompt = f"""
+            Extract the fields to update from: "{message}"
+            Valid fields are 'weight' and 'goal weight'.
+            Respond ONLY with JSON: {{"weight_kg": <number_or_null>, "goal_weight_kg": <number_or_null>}}
+            Example for '내 목표 체중을 68kg으로 변경해줘': {{"weight_kg": null, "goal_weight_kg": 68}}
+            Example for '내 체중 75kg': {{"weight_kg": 75, "goal_weight_kg": null}}
+            """
+            update_str = call_ollama(prompt)
+            json_match = re.search(r'\{.*\}', update_str, re.DOTALL)
+
+            updated = False
+            if not json_match:
+                print(f"Update error: LLM did not return JSON. Raw: {update_str}")
+                raise ValueError("LLM did not return JSON")
+
+            update_data = json.loads(json_match.group(0))
+            weight_kg = update_data.get("weight_kg")
+            goal_weight_kg = update_data.get("goal_weight_kg")
+
+            if weight_kg:
+                profile["weight_kg"] = str(weight_kg)
+                profile["bmi"] = str(calculate_bmi(profile["weight_kg"], profile["height_cm"]))
+                updated = True
+            if goal_weight_kg:
+                profile["goal_weight_kg"] = str(goal_weight_kg)
+                updated = True
+
+            if updated:
+                new_plans = generate_plans_from_profile(profile)
+                profile["plans"] = new_plans
+                save_user_profile(profile)
+                return jsonify({"response": "프로필을 업데이트하고 플랜을 다시 생성했습니다. 'Plan' 탭을 확인하세요!", "profile": profile})
+            else:
+                return jsonify({"response": "업데이트할 내용을 이해하지 못했어요. '내 체중 75kg으로 변경' 또는 '목표 체중 70kg으로 설정'처럼 말씀해주세요."})
+        except Exception as e:
+            print(f"Profile update error: {e}")
+            return jsonify({"response": "프로필 업데이트 중 오류가 발생했습니다. 다시 시도해 주세요."})
+
+    # --- Intent 4: Meal Logging (CHECKED THIRD) ---
     elif log_match:
         print("Intent: Meal Logging")
         try:
             prompt = f"""
-            Extract the food name and weight in grams from the user's message.
-            User message: "{message}"
-            Your response MUST be in this exact JSON format: {{"food": "<food_name>", "weight": <number_in_grams>}}
+            Extract the food name and weight in grams from: "{message}"
+            Respond ONLY with JSON: {{"food": "<food_name>", "weight": <number>}}
             """
             meal_data_str = call_ollama(prompt)
-            meal_data = json.loads(meal_data_str)
+
+            # --- FIX: Clean the JSON response ---
+            json_match = re.search(r'\{.*\}', meal_data_str, re.DOTALL)
+            if not json_match:
+                print(f"Meal log error: LLM did not return JSON. Raw: {meal_data_str}")
+                raise ValueError("LLM did not return JSON")
+            meal_data = json.loads(json_match.group(0))
+            # --- END FIX ---
+
             food_name = meal_data.get("food")
             weight = float(meal_data.get("weight", 0))
-
-            if not food_name or weight == 0:
-                raise ValueError("LLM could not parse food/weight")
+            if not food_name or weight == 0: raise ValueError("LLM parse fail")
 
             food_info = find_food_data(food_name)
 
             if food_info:
-                quantity = food_info["quantity"]
+                quantity = float(food_info["quantity"])
                 factor = weight / quantity
-                macros = {
-                    "calories": round(food_info["calories"] * factor, 2),
-                    "protein": round(food_info["protein"] * factor, 2),
-                    "carbs": round(food_info["carbs"] * factor, 2),
-                    "fat": round(food_info["fat"] * factor, 2),
-                }
+                macros = {"calories": round(food_info["calories"] * factor, 2), "protein": round(food_info["protein"] * factor, 2), "carbs": round(food_info["carbs"] * factor, 2), "fat": round(food_info["fat"] * factor, 2)}
+                meal_entry = {"name": food_info["name"], "weight": weight, "macros": macros}
 
-                meal_entry = {
-                    "time": datetime.now().strftime('%H:%M'),
-                    "name": food_info["name"],
-                    "weight": weight,
-                    "macros": macros
-                }
-                add_meal_to_log(meal_entry, datetime.now().strftime('%Y-%m-%d'))
+                # --- PASS 'time_str' to the function ---
+                add_meal_to_log(meal_entry, date_str, time_str)
 
                 return jsonify({
-                    "response": f"Logged: {weight}g of {food_info['name']} ({macros['calories']} kcal). Great job!",
-                    "daily_summary": get_macros_for_date(datetime.now().strftime('%Y-%m-%d'))
+                    "response": f"기록 완료: {food_info['name']} {weight}g ({macros['calories']} kcal). 맛있게 드셨나요?",
+                    "daily_summary": get_macros_for_date(date_str)
                 })
             else:
                 return jsonify({
-                    "response": f"I don't have '{food_name}' in my database. Can you tell me the main ingredients?"
+                    "response": f"'{food_name}'이(가) 제 데이터베이스에 없네요. 이 음식을 추가하려면, 주재료와 무게를 알려주세요. (예: '돼지고기 100g, 김치 150g')",
+                    "action_required": "add_new_food",
+                    "food_name": food_name
                 })
         except Exception as e:
             print(f"Meal log error: {e}")
-            return jsonify({"response": "I had trouble logging that. Please use the format '[Food Name] [Weight]g' (e.g., '닭가슴살 200g')."})
+            return jsonify({"response": "기록에 실패했어요. '[음식 이름] [무게]g' 형식으로 다시 시도해주세요. (예: '닭가슴살 200g')"})
 
-    # --- Intent 4: General Q&A (Uses PDF Brain) ---
+    # --- Intent 5: General Q&A (CHECKED LAST) ---
     else:
         print("Intent: General Q&A (using PDF Brain 2)")
         context = find_knowledge_from_pdfs(message)
-
         prompt = f"""
         You are PocketCoach, an expert fitness AI. Answer the user's question based ONLY on the provided context.
-        If the context is not relevant or doesn't answer the question, just say 'I'm not sure about that, but I can help with logging your meals or updating your plan!'.
+        If the context is not relevant, just say '죄송합니다. 해당 질문에 대한 정보가 없습니다. 식단 기록이나 플랜 업데이트는 도와드릴 수 있어요!'.
         Answer in friendly, concise Korean.
 
         Context:
@@ -583,7 +693,6 @@ def get_summary():
     profile = load_user_profile()
     daily_total = get_macros_for_date(date_str)
     plan_goals = profile.get("plans", {}).get("diet_plan", {})
-
     summary = {
         "total": daily_total,
         "goal": {

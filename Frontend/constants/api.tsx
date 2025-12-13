@@ -4,4 +4,4 @@
 // 'localhost'나 '127.0.0.1'은 휴대폰에서 작동하지 않습니다.
 
 
-export const API_BASE_URL = `http://192.168.219.101:5000`;
+export const API_BASE_URL = `http://192.168.219.103:5000`;
